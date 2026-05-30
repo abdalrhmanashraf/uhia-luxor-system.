@@ -100,6 +100,7 @@ function renderProviders(list) {
     var o          = document.createElement('option');
     o.value        = p.code;
     o.dataset.name = p.name;
+    o.dataset.loc  = p.location || '';
     o.textContent  = p.name + (p.location ? ' — ' + p.location : '');
     sel.appendChild(o);
   });
@@ -114,6 +115,7 @@ function providerChanged() {
   APP.providerCode = sel.value;
   APP.providerName = sel.options[sel.selectedIndex].dataset.name
                   || sel.options[sel.selectedIndex].textContent;
+  APP.location = sel.options[sel.selectedIndex].dataset.loc || '';
   document.getElementById('actionBtns').style.display = 'grid';
 }
 
@@ -198,7 +200,7 @@ function selY(btn, code, val) {
 function collectSurveyAnswers() {
   var ALL_QUESTIONS = [
     'Q_COM_01','Q_COM_02','Q_COM_03','Q_COM_03B',
-    'Q_COM_04','Q_COM_05','Q_COM_99',
+    'Q_COM_04','Q_COM_05','Q_COM_99','EMP_NAME',
     'Q_UNIT_01','Q_UNIT_02','Q_UNIT_03','Q_UNIT_04',
     'Q_CARE_01','Q_CARE_02','Q_CARE_03','Q_CARE_04','Q_CARE_05',
     'Q_CONT_01','Q_CONT_02','Q_CONT_03','Q_CONT_04',
@@ -226,6 +228,7 @@ function submitSurvey() {
       category:     APP.category,
       providerCode: APP.providerCode,
       providerName: APP.providerName,
+      location:     APP.location,
       answers:      collectSurveyAnswers()
     }
   }, function(err, res) {

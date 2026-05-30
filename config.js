@@ -1,4 +1,17 @@
-// config.js — ضع رابط الـ Apps Script هنا بعد النشر
-var SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbxB1JhYO6lAWf3sej9sgTsy3sFM5DAl1fUGroljKnC92xUGgkku0ULEhDY6pzbylG8LzQ/exec';
+// ==========================================
+// Config - Global Settings
+// ==========================================
+
+// الرابط الجديد بعد التحديث
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_Z-lvfMPKOGcIRPvkvjD3eXnLl3ymX3G-s107B6cMO_daGnFc11TdfOp7FfqQJKg/exec';
+
+// اسم الفرع (مستخدم في الواجهات)
 var BRANCH_NAME = 'فرع الأقصر';
-var LOGO_URL    = 'https://upload.wikimedia.org/wikipedia/ar/a/ab/%D8%A7%D9%84%D9%87%D9%8A%D8%A6%D8%A9_%D8%A7%D9%84%D8%B9%D8%A7%D9%85%D8%A9_%D9%84%D9%84%D8%AA%D8%A3%D9%85%D9%8A%D9%86_%D8%A7%D9%84%D8%B5%D8%AD%D9%8A_%D8%A7%D9%84%D8%B4%D8%A7%D9%85%D9%84_%28%D9%85%D8%B5%D8%B1%29.png';
+
+// لضمان الوصول للرابط في كل المتصفحات
+window.SCRIPT_URL = SCRIPT_URL;
+window.BRANCH_NAME = BRANCH_NAME;
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { SCRIPT_URL: SCRIPT_URL };
+}

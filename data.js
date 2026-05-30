@@ -90,7 +90,8 @@ var STATIC_DATA = {
       {code:'Q_COM_03B',type:'multiple',text:'إن كانت نعم - طبيعة المبلغ؟',required:false,options:['مساهمة مالية طبقاً للقانون','مقابل تقديم خدمة','بدون سبب واضح'],dependOn:'Q_COM_03',dependVal:'نعم'},
       {code:'Q_COM_04',type:'rating',text:'كيف تقيم معاملة الطاقم الطبي والإداري؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
       {code:'Q_COM_05',type:'rating',text:'كيف تقيم نظافة المكان؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
-      {code:'Q_COM_99',type:'text',text:'ملاحظات أو اقتراحات إضافية',required:false,options:[]}
+      {code:'Q_COM_99',type:'text',text:'ملاحظات أو اقتراحات إضافية',required:false,options:[]},
+      {code:'EMP_NAME',type:'text',text:'اسم الموظف / جامع الاستبيان (اختياري لتسجيل الأداء)',required:false,options:[]}
     ],
     'وحدة صحية': [
       {code:'Q_UNIT_01',type:'rating',text:'كيف تقيم سرعة الاستجابة وتقديم الخدمة؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
