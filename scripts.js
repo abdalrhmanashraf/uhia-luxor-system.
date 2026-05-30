@@ -121,8 +121,13 @@ function providerChanged() {
 
 function goSurvey() {
   goStep('4s');
-  var questions = (STATIC_DATA.questions['shared'] || [])
-    .concat(STATIC_DATA.questions[APP.category] || []);
+  var shared = STATIC_DATA.questions['shared'] || [];
+  var catSpecific = STATIC_DATA.questions[APP.category] || [];
+  
+  var normalShared = shared.filter(function(q){ return q.code !== 'Q_COM_99' && q.code !== 'EMP_NAME'; });
+  var endShared = shared.filter(function(q){ return q.code === 'Q_COM_99' || q.code === 'EMP_NAME'; });
+  
+  var questions = normalShared.concat(catSpecific).concat(endShared);
   renderSurvey(questions);
 }
 
