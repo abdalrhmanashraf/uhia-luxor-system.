@@ -123,6 +123,8 @@ function renderAll() {
   renderLocationBars();
   renderRecentTable();
   renderWordCloud();
+  renderSurveys();
+  renderAllComplaints();
 }
 
 // ─── KPI Cards ───────────────────────────────────────────────
@@ -307,6 +309,120 @@ function renderWordCloud() {
     var col  = colors[i % colors.length];
     return '<span class="wc-word" style="font-size:' + size + 'rem;color:' + col + ';background:' + col + '18">'
       + w.word + '</span>';
+  }).join('');
+}
+
+// ─── Survey Dashboard ─────────────────────────────────────────
+function renderSurveys() {
+  var k = DB.kpi || {};
+  var s = k.surveysAnalytics || null;
+  if (!s) return; // لا يوجد بيانات استبيانات حديثة
+  
+  // تحديث البطاقات العلوية
+  var total = k.totalSurveys || 0;
+  setTextAnim('sv-total', total);
+  
+  if (total > 0 && s.nps) {
+    var promoters = Math.round((s.nps.promoters / total) * 100);
+    var detractors = Math.round((s.nps.detractors / total) * 100);
+    var npsScore = promoters - detractors;
+    setTextAnim('sv-promoters', promoters + '%');
+    setTextAnim('sv-detractors', detractors + '%');
+    setTextAnim('sv-nps', npsScore);
+  }
+
+  // رسم الرادار
+  var canvasRadar = document.getElementById('surveyRadarChart');
+  if (canvasRadar) {
+    if (DB.charts.radar) DB.charts.radar.destroy();
+    DB.charts.radar = new Chart(canvasRadar, {
+      type: 'radar',
+      data: {
+        labels: ['التواصل والتسجيل', 'بيئة الوحدة', 'رعاية المستشفى', 'الجهات المتعاقدة', 'المعامل'],
+        datasets: [{
+          label: 'متوسط الرضا',
+          data: s.radarData || [0,0,0,0,0],
+          backgroundColor: 'rgba(96,165,250,0.2)',
+          borderColor: '#60a5fa',
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#60a5fa',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: '#60a5fa'
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, backdropColor: 'transparent', color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { color: '#e2e8f0', font: { family: 'Cairo' } } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // أفضل 5 منشآت
+  var canvasTop = document.getElementById('topProvidersChart');
+  if (canvasTop && s.topProviders) {
+    if (DB.charts.top) DB.charts.top.destroy();
+    DB.charts.top = new Chart(canvasTop, {
+      type: 'bar',
+      data: {
+        labels: s.topProviders.map(function(p){ return p.name; }),
+        datasets: [{ data: s.topProviders.map(function(p){ return p.score; }), backgroundColor: '#4ade80', borderRadius: 4 }]
+      },
+      options: Object.assign(chartOptions(''), { indexAxis: 'y', scales: { x: { min: 0, max: 5, grid: {color: 'rgba(255,255,255,0.05)'}, ticks: {color: '#94a3b8'} }, y: { grid: {display: false}, ticks: {color: '#e2e8f0', font: {family: 'Cairo'}} } } })
+    });
+  }
+
+  // أسوأ 5 منشآت
+  var canvasBot = document.getElementById('bottomProvidersChart');
+  if (canvasBot && s.bottomProviders) {
+    if (DB.charts.bot) DB.charts.bot.destroy();
+    DB.charts.bot = new Chart(canvasBot, {
+      type: 'bar',
+      data: {
+        labels: s.bottomProviders.map(function(p){ return p.name; }),
+        datasets: [{ data: s.bottomProviders.map(function(p){ return p.score; }), backgroundColor: '#f87171', borderRadius: 4 }]
+      },
+      options: Object.assign(chartOptions(''), { indexAxis: 'y', scales: { x: { min: 0, max: 5, grid: {color: 'rgba(255,255,255,0.05)'}, ticks: {color: '#94a3b8'} }, y: { grid: {display: false}, ticks: {color: '#e2e8f0', font: {family: 'Cairo'}} } } })
+    });
+  }
+
+  // اتجاه الرضا
+  var canvasSTrend = document.getElementById('surveyTrendChart');
+  if (canvasSTrend && s.dailyTrend) {
+    if (DB.charts.strend) DB.charts.strend.destroy();
+    DB.charts.strend = new Chart(canvasSTrend, {
+      type: 'line',
+      data: {
+        labels: s.dailyTrend.map(function(d){ return d.date.slice(5); }),
+        datasets: [{ label: 'متوسط الرضا', data: s.dailyTrend.map(function(d){ return d.score; }), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.1)', fill: true, tension: 0.4 }]
+      },
+      options: Object.assign(chartOptions(''), { scales: { y: { min: 1, max: 5, grid: {color: 'rgba(255,255,255,0.05)'}, ticks: {color: '#94a3b8'} }, x: { grid: {display: false}, ticks: {color: '#94a3b8'} } } })
+    });
+  }
+}
+
+// ─── All Complaints Table ─────────────────────────────────────
+function renderAllComplaints() {
+  var tbody = document.getElementById('allComplaintsTableBody');
+  if (!tbody) return;
+  // لجعل الجدول ممتلئ، نستخدم DB.recent لأن الخادم حالياً لا يرسل كل الشكاوى
+  // في تحديث قادم يمكن جعل الخادم يرسل آخر 50 شكوى أو حسب الحاجة
+  var rows = DB.recent || [];
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="table-empty">لا توجد شكاوى بعد</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(function(c) {
+    return '<tr>'
+      + '<td><code style="color:#60a5fa;font-size:.75rem">' + (c.id||'') + '</code></td>'
+      + '<td>' + (c.name||'') + '</td>'
+      + '<td>' + (c.category||'') + '</td>'
+      + '<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (c.provider||'') + '</td>'
+      + '<td>' + statusBadge(c.status) + '</td>'
+      + '<td>' + slaBadge(c.slaStatus, c.slaBreached) + '</td>'
+      + '<td>' + severityBadge(c.severity) + '</td>'
+      + '<td style="font-size:.72rem;color:#94a3b8">' + fmtDate(c.timestamp) + '</td>'
+      + '</tr>';
   }).join('');
 }
 
