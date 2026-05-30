@@ -246,7 +246,8 @@ function openModal(id) {
     detailItem('تاريخ التقديم',  fmtDate(c.timestamp)),
     c.closedAt ? detailItem('تاريخ الإغلاق', fmtDate(c.closedAt)) : '',
     c.text ? '<div class="detail-item full"><div class="detail-label">نص الشكوى</div><div class="detail-value" style="line-height:1.6">' + escHtml(c.text) + '</div></div>' : '',
-    c.hasAudio ? '<div class="detail-item full"><div class="detail-label">🎙️ تسجيل صوتي</div><div class="detail-value"><a href="' + c.audioUrl + '" target="_blank" style="color:#60a5fa">استماع</a></div></div>' : '',
+    c.hasAudio ? '<div class="detail-item full"><div class="detail-label">🎙️ تسجيل صوتي</div><div class="detail-value"><a href="' + c.audioUrl + '" target="_blank" style="color:#60a5fa">استماع للتسجيل</a></div></div>' : '',
+    c.hasImages && c.imageUrls ? '<div class="detail-item full"><div class="detail-label">📎 المرفقات (الصور)</div><div class="detail-value">' + String(c.imageUrls).split(',').map(function(url, i) { return '<a href="' + url.trim() + '" target="_blank" style="display:inline-block;margin-left:10px;color:#60a5fa">صورة ' + (i+1) + '</a>'; }).join('') + '</div></div>' : '',
     c.resolutionNote ? '<div class="detail-item full"><div class="detail-label">ملاحظة الحل السابقة</div><div class="detail-value" style="color:#4ade80">' + escHtml(c.resolutionNote) + '</div></div>' : '',
   ].join('');
 
