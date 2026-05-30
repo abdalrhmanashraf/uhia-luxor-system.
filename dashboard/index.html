@@ -329,5 +329,20 @@
 <div class="toast" id="toast"></div>
 
 <script src="dashboard.js"></script>
+<script>
+  // ضمان تحميل البيانات الحقيقية بغض النظر عن نسخة dashboard.js
+  (function() {
+    var API = 'https://script.google.com/macros/s/AKfycbxB1JhYO6lAWf3sej9sgTsy3sFM5DAl1fUGroljKnC92xUGgkku0ULEhDY6pzbylG8LzQ/exec';
+    // تصحيح SCRIPT_URL
+    SCRIPT_URL = API;
+    // بعد اكتمال تحميل الصفحة، إعادة تحميل البيانات بالرابط الصحيح
+    window.addEventListener('load', function() {
+      SCRIPT_URL = API;
+      if (typeof loadData === 'function') {
+        setTimeout(function() { loadData(true); }, 100);
+      }
+    });
+  })();
+</script>
 </body>
 </html>
