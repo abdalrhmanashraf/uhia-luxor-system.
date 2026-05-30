@@ -1,4 +1,3 @@
-// config.js — إعدادات المنظومة والروابط
 const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbxrc-PfVQKdVc1S4HoUS9Kj1hSt2iBKRaxxA6VKCRBAILKahq3cgXENy8uVOJUAbxJl5g/exec';
 const BRANCH_NAME = 'فرع الأقصر';
-const LOGO_URL    = 'https://upload.wikimedia.org/wikipedia/ar/a/ab/%D8%A7%D9%84%D9%87%D9%8A%D8%A6%D8%A9_%D8%A7%D9%84%D8%B9%D8%A7%D9%85%D8%A9_%D9%84%D9%84%D8%AA%D8%A3%D9%85%D9%8A%D9%86_%D8%A7%D9%84%D8%B5%D8%AD%D9%8A_%D8%A7%D9%84%D8%B4%D8%A7%D9%85%D9%84_%28%D9%85%D8%B5%D8%B1%29.png';
+const LOGO_URL    = '';
