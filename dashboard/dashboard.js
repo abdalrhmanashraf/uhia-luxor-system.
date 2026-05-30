@@ -146,7 +146,7 @@ function renderCharts(cData) {
   // --------------------------------------------------------
   // V4.0 Advanced Survey Analytics Rendering
   // --------------------------------------------------------
-  document.getElementById('kpiSurveyTotal').textContent = cData.surveyCount || 0;
+  document.getElementById('kpiSurveyTotal').textContent = data.analytics.surveyCount || 0;
   var overallRadar = cData.radar || [0,0,0,0,0];
   var totalAvg = overallRadar.reduce((a,b)=>a+b, 0) / 5;
   document.getElementById('kpiSurveyAvg').textContent = totalAvg.toFixed(2) + ' / 5';
