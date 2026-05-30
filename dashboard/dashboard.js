@@ -196,19 +196,33 @@ function renderCharts(cData) {
     options: { responsive: true, maintainAspectRatio: false }
   });
 
-  // 5. Matrix Table
-  var mTable = '<thead><tr><th>الموقع</th>' + Array.from(catSet).map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
-  Object.keys(cData.sLocCat || {}).forEach(loc => {
-    mTable += `<tr><td><strong>${loc}</strong></td>`;
-    Array.from(catSet).forEach(cat => {
-      var d = cData.sLocCat[loc][cat];
-      var val = d ? (d.s/d.c).toFixed(1) : '-';
-      var bg = d ? `rgba(59, 130, 246, ${Math.max(0.1, (d.s/d.c)/5)})` : 'transparent';
-      mTable += `<td style="background:${bg}; text-align:center;">${val}</td>`;
+  // Heatmap Table (sMatrixTable)
+  var matrixHtml = '<thead><tr><th>الموقع</th><th>وحدات صحية</th><th>مستشفيات רعاية</th><th>مستشفيات متعاقدة</th><th>معامل متعاقدة</th></tr></thead><tbody>';
+  var allLocs = Object.keys(cData.sLocCat || {}).sort();
+  allLocs.forEach(loc => {
+    var catMap = cData.sLocCat[loc];
+    matrixHtml += `<tr><td><strong>${loc}</strong></td>`;
+    ['وحدة صحية', 'مستشفى رعاية', 'مستشفى متعاقد', 'معمل متعاقد'].forEach(c => {
+      if(!catMap[c]) { matrixHtml += '<td>-</td>'; return; }
+      var av = catMap[c].s / catMap[c].c;
+      var clr = av >= 4 ? '#10b981' : (av >= 2.5 ? '#f59e0b' : '#ef4444');
+      matrixHtml += `<td style="color:${clr};font-weight:bold">${av.toFixed(1)} <span style="font-size:10px;color:rgba(255,255,255,0.5)">(${catMap[c].c})</span></td>`;
     });
-    mTable += `</tr>`;
+    matrixHtml += '</tr>';
   });
-  document.getElementById('sMatrixTable').innerHTML = mTable + '</tbody>';
+  matrixHtml += '</tbody>';
+  document.getElementById('sMatrixTable').innerHTML = matrixHtml;
+  
+  // Top Employees Table (sEmpTable)
+  var empHtml = '';
+  if (!cData.sEmp || cData.sEmp.length === 0) {
+    empHtml = '<tr><td colspan="2" style="text-align:center;">لا توجد بيانات للموظفين</td></tr>';
+  } else {
+    cData.sEmp.slice(0, 10).forEach(emp => {
+      empHtml += `<tr><td>${emp.label}</td><td><span class="badge" style="background:#3b82f6">${emp.count}</span></td></tr>`;
+    });
+  }
+  document.getElementById('sEmpTable').innerHTML = empHtml;
 
   // 6. Radar Chart
   if(charts.sRadar) charts.sRadar.destroy();
