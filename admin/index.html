@@ -3,25 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>نظام إدارة علاقات المرضى — UHIA الأقصر</title>
+<title>نظام إدارة التذاكر التعاوني — UHIA الأقصر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-<!-- تضمين رابط الـ API مباشرة لضمان عدم وجود أخطاء -->
-<script>
-  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_Z-lvfMPKOGcIRPvkvjD3eXnLl3ymX3G-s107B6cMO_daGnFc11TdfOp7FfqQJKg/exec';
-</script>
+<!-- تضمين رابط الـ API مباشرة -->
+<script src="../config.js"></script>
 <link rel="stylesheet" href="admin.css">
+<style>
+  /* إضافات الـ Timeline والملاحظات التراكمية */
+  .timeline-box { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: 15px; max-height: 200px; overflow-y: auto; }
+  .thread-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.1); }
+  .thread-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .thread-meta { font-size: 0.8rem; color: var(--primary); font-weight: bold; margin-bottom: 5px; }
+  .thread-meta span { color: var(--text-muted); font-weight: normal; margin-right: 10px; font-size: 0.75rem; }
+  .thread-text { font-size: 0.9rem; color: var(--text-main); line-height: 1.4; }
+  .badge-locked { background: rgba(59, 130, 246, 0.2); color: #93c5fd; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; display: inline-block; margin-top: 5px; border: 1px solid currentColor; }
+</style>
 </head>
 <body>
 
-<!-- ═══ شاشة الدخول (Premium Login) ═══ -->
 <div class="login-screen" id="loginScreen">
   <div class="glass-card login-card">
     <div class="login-logo">
-      <img src="https://upload.wikimedia.org/wikipedia/ar/a/ab/%D8%A7%D9%84%D9%87%D9%8A%D8%A6%D8%A9_%D8%A7%D9%84%D8%B9%D8%A0%D9%85%D8%A9_%D9%84%D9%84%D8%AA%D8%A3%D9%85%D9%8A%D9%86_%D8%A7%D9%84%D8%B5%D8%AD%D9%8A_%D8%A7%D9%84%D8%B4%D8%A0%D9%85%D9%84_%28%D9%85%D8%B5%D8%B1%29.png" alt="شعار">
+      <img src="../uhia.png" alt="شعار هيئة التأمين الصحي الشامل">
     </div>
-    <h1 class="login-title">بوابة الموظفين</h1>
-    <p class="login-sub">إدارة علاقات المرضى والشكاوى - فرع الأقصر</p>
+    <h1 class="login-title">بوابة الموظفين التعاونية</h1>
+    <p class="login-sub">مرحباً بك في نظام إدارة مسار الشكاوى الذكي</p>
     
     <div class="form-field">
       <label>رقم الهاتف (أو كود الدخول)</label>
@@ -38,15 +45,12 @@
     </div>
     
     <button class="btn-primary btn-block" id="loginBtn" onclick="doLogin()">
-      <span id="loginBtnText">تسجيل الدخول</span>
+      <span id="loginBtnText">تسجيل الدخول الدخول</span>
     </button>
   </div>
 </div>
 
-<!-- ═══ لوحة الإدارة ═══ -->
 <div class="admin-wrap" id="adminWrap" style="display:none">
-  
-  <!-- القائمة الجانبية -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="user-avatar">👤</div>
@@ -57,21 +61,19 @@
     </div>
     <nav class="sidebar-nav">
       <a href="#complaints" class="nav-item active" onclick="switchTab('complaints')">📋 إدارة الشكاوى</a>
-      <a href="../dashboard/index.html" class="nav-item">📊 لوحة التحكم (داشبورد)</a>
+      <a href="../dashboard/index.html" class="nav-item">📊 الداشبورد التحليلية</a>
       <a href="#" class="nav-item danger" onclick="logout()">🚪 تسجيل الخروج</a>
     </nav>
   </aside>
 
-  <!-- المحتوى الرئيسي -->
   <main class="main-content">
     <header class="topbar">
-      <h2>إدارة الشكاوى النشطة</h2>
+      <h2>إدارة الشكاوى النشطة (نظام التذاكر)</h2>
       <div class="topbar-actions">
         <button class="btn-icon" onclick="loadData()">🔄 تحديث البيانات</button>
       </div>
     </header>
 
-    <!-- شريط الفلاتر الذكي -->
     <div class="glass-panel filters-bar">
       <div class="search-box">
         <span class="icon">🔍</span>
@@ -86,34 +88,25 @@
           <option>تم الحل</option>
           <option>مغلقة</option>
         </select>
-        
-        <select id="fSeverity" onchange="applyFilters()" class="glass-input">
-          <option value="">مستوى الخطورة</option>
-          <option>عالٍ</option>
-          <option>متوسط</option>
-          <option>منخفض</option>
-        </select>
       </div>
     </div>
 
-    <!-- جدول البيانات -->
     <div class="glass-panel table-panel">
       <div class="table-meta" id="tableMeta">جارٍ التحميل...</div>
       <div class="table-responsive">
         <table class="data-table" id="adminTable">
           <thead>
             <tr>
-              <th>رقم الشكوى</th>
+              <th>رقم التذكرة</th>
               <th>الاسم / الهاتف</th>
-              <th>المنفذ</th>
-              <th>الحالة</th>
-              <th>الخطورة</th>
-              <th>المرفقات</th>
+              <th>المنفذ / التصنيف</th>
+              <th>حالة التذكرة</th>
+              <th>مسار العمل (Workflow)</th>
               <th>الإجراء</th>
             </tr>
           </thead>
           <tbody id="adminTableBody">
-            <tr><td colspan="7" class="table-empty">الرجاء الانتظار، جاري جلب البيانات...</td></tr>
+            <tr><td colspan="6" class="table-empty">الرجاء الانتظار، جاري جلب البيانات...</td></tr>
           </tbody>
         </table>
       </div>
@@ -121,23 +114,22 @@
   </main>
 </div>
 
-<!-- ═══ نافذة الإجراءات (Action Modal) ═══ -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="glass-modal" id="modalBox">
     <div class="modal-header">
-      <h2 id="modalTitle">معالجة الشكوى</h2>
+      <h2 id="modalTitle">معالجة التذكرة</h2>
       <button class="btn-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body" id="modalBody">
-      <!-- بيانات الشكوى بالتفصيل -->
       <div class="complaint-details-box" id="complaintDetails"></div>
       
-      <!-- المرفقات والصوت -->
-      <div class="media-box" id="mediaBox"></div>
+      <h3 style="margin-top:15px; font-size:1rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">سجل الملاحظات والإجراءات 📜</h3>
+      <div class="timeline-box" id="timelineBox">
+        <!-- ستظهر الملاحظات التراكمية هنا -->
+      </div>
       
       <hr class="glass-divider">
       
-      <!-- نموذج التحديث -->
       <div class="update-form">
         <div class="form-group">
           <label>تحديث الحالة:</label>
@@ -149,8 +141,8 @@
           </select>
         </div>
         <div class="form-group">
-          <label>ملاحظات المعالجة (تظهر للإدارة):</label>
-          <textarea id="modalNote" class="glass-input" rows="3" placeholder="ما هي الخطوات التي اتخذتها لحل هذه الشكوى؟"></textarea>
+          <label>إضافة ملاحظة جديدة للسجل (لا تحذف الملاحظات القديمة):</label>
+          <textarea id="modalNote" class="glass-input" rows="3" placeholder="اكتب ردك أو الإجراء الذي اتخذته..."></textarea>
         </div>
       </div>
     </div>
@@ -161,14 +153,9 @@
   </div>
 </div>
 
-<!-- Full Screen Loader -->
-<div class="full-loading" id="fullLoading" style="display:none">
-  <div class="spinner"></div>
-</div>
-
+<div class="full-loading" id="fullLoading" style="display:none"><div class="spinner"></div></div>
 <div class="toast" id="toast"></div>
 
-<!-- Custom Scripts -->
 <script src="admin.js"></script>
 </body>
 </html>
