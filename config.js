@@ -1,3 +1,11 @@
-var SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbxB1JhYO6lAWf3sej9sgTsy3sFM5DAl1fUGroljKnC92xUGgkku0ULEhDY6pzbylG8LzQ/exec';
-var BRANCH_NAME = 'فرع الأقصر';
-var LOGO_URL    = '';
+// ==========================================
+// Config - Global Settings
+// ==========================================
+
+// الرابط الجديد بعد التحديث
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_Z-lvfMPKOGcIRPvkvjD3eXnLl3ymX3G-s107B6cMO_daGnFc11TdfOp7FfqQJKg/exec';
+
+// تصدير للوصول من باقي الملفات إذا لزم الأمر (לبيئات العمل الحديثة)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { SCRIPT_URL };
+}

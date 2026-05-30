@@ -1,525 +1,265 @@
 // ═══════════════════════════════════════════════════════════════
-// admin.js — منطق لوحة متابعة الشكاوى
-// UHIA Luxor System v2.0
+// Premium Admin JS
+// UHIA Luxor System v3.0
 // ═══════════════════════════════════════════════════════════════
 
-// ── State ─────────────────────────────────────────────────────
-var ADMIN = {
-  token:       '',
-  complaints:  [],
-  currentPage: 1,
-  pageSize:    20,
-  totalPages:  1,
-  totalCount:  0,
-  filters:     {},
-  currentId:   null,
-  searchTimer: null,
-};
+var API_URL = window.SCRIPT_URL || '';
+var currentUser = null;
+var complaintsData = [];
+var currentComplaintId = null;
 
-// ─── Startup ──────────────────────────────────────────────────
+// ─── إعداد الصفحة ───
 window.addEventListener('load', function() {
-  // تحقق من session مؤقتة
-  var saved = sessionStorage.getItem('adminToken');
-  if (saved) {
-    ADMIN.token = saved;
-    showPanel();
-    loadComplaints();
+  var savedUser = localStorage.getItem('uhia_user');
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    showAdminPanel();
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminWrap').style.display = 'none';
   }
 });
 
-// ─── Login ────────────────────────────────────────────────────
-function doLogin() {
-  var pwd = document.getElementById('pwdInput').value;
-  if (!pwd) { setLoginError('أدخل كلمة المرور'); return; }
-  setLoginError('');
-  setLoginLoading(true);
+// ─── تسجيل الدخول ───
+function togglePwd() {
+  var input = document.getElementById('pwdInput');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
 
-  callApi('adminLogin', { payload: { password: pwd } }, function(err, res) {
-    setLoginLoading(false);
-    if (err || !res || !res.success) {
-      setLoginError('كلمة المرور غير صحيحة');
-      return;
+function doLogin() {
+  var phone = document.getElementById('phoneInput').value.trim();
+  var pwd = document.getElementById('pwdInput').value.trim();
+  var err = document.getElementById('loginError');
+  var btnText = document.getElementById('loginBtnText');
+
+  if (!phone || !pwd) {
+    err.innerText = 'الرجاء إدخال رقم الهاتف وكلمة المرور';
+    return;
+  }
+  
+  if (!API_URL) {
+    err.innerText = 'خطأ: لم يتم العثور على رابط API.';
+    return;
+  }
+
+  err.innerText = '';
+  btnText.innerText = 'جارٍ التحقق...';
+  
+  var payload = { action: 'login', phone: phone, password: pwd };
+  
+  fetch(API_URL, {
+    method: 'POST',
+    mode: 'no-cors', // لا يمكننا قراءة الرد المباشر بسبب سياسات جوجل مع POST أحيانا، لذلك نستخدم JSONP كبديل، 
+    // ولكن نظرًا لأن الكود في جوجل تم إعداده للرد عبر JSON، سنحاول استخدامه.
+    // ملاحظة: Google Apps Script POST requests from browser often require no-cors, which makes reading response impossible.
+    // للحصول على ردود من POST في Apps Script يجب تفعيل CORS، أو استخدام طريقة تعتمد على fetch عادي.
+    // بناء على الطريقة المتبعة: سنرسل بـ text/plain 
+  });
+  
+  // التصحيح: الطريقة الأمثل للـ Apps script هي إرسال Post بـ text/plain 
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(res) {
+    if (res.success) {
+      currentUser = res.user;
+      localStorage.setItem('uhia_user', JSON.stringify(currentUser));
+      showAdminPanel();
+    } else {
+      err.innerText = res.message || 'بيانات الدخول غير صحيحة';
+      btnText.innerText = 'تسجيل الدخول';
     }
-    ADMIN.token = pwd;
-    sessionStorage.setItem('adminToken', pwd);
-    showPanel();
-    loadComplaints();
+  })
+  .catch(function(error) {
+    console.error(error);
+    err.innerText = 'حدث خطأ في الاتصال بالخادم.';
+    btnText.innerText = 'تسجيل الدخول';
   });
 }
 
 function logout() {
-  sessionStorage.removeItem('adminToken');
-  ADMIN.token = '';
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('adminWrap').style.display   = 'none';
-  document.getElementById('pwdInput').value = '';
+  localStorage.removeItem('uhia_user');
+  location.reload();
 }
 
-function togglePwd() {
-  var inp = document.getElementById('pwdInput');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-
-function setLoginError(msg) {
-  document.getElementById('loginError').textContent = msg;
-}
-function setLoginLoading(on) {
-  var btn  = document.getElementById('loginBtn');
-  var txt  = document.getElementById('loginBtnText');
-  btn.disabled  = on;
-  txt.textContent = on ? 'جارٍ التحقق...' : 'دخول';
-}
-
-function showPanel() {
+function showAdminPanel() {
   document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('adminWrap').style.display   = 'flex';
+  document.getElementById('adminWrap').style.display = 'flex';
+  
+  document.getElementById('displayUserName').innerText = currentUser.name;
+  document.getElementById('displayUserRole').innerText = currentUser.role === 'admin' ? 'مدير نظام' : 'موظف';
+  
+  loadData();
 }
 
-// ─── Load Complaints ──────────────────────────────────────────
-function loadComplaints() {
-  showFullLoading(true);
-  var filters = buildFilters();
-
-  callApi('getComplaints', {
-    token:   ADMIN.token,
-    payload: { filters: filters, token: ADMIN.token },
-  }, function(err, res) {
-    showFullLoading(false);
-    if (err || !res || !res.success) {
-      if (res && res.error === 'غير مصرح') { logout(); return; }
-      // Demo mode
-      renderDemoComplaints();
-      return;
-    }
-    ADMIN.complaints  = res.items || [];
-    ADMIN.totalCount  = res.total || 0;
-    ADMIN.currentPage = res.page  || 1;
-    ADMIN.totalPages  = res.totalPages || 1;
-    renderTable();
-    renderPagination();
-    renderTopbarStats();
-  });
+// ─── تحميل وعرض البيانات ───
+function loadData() {
+  showLoading(true);
+  fetch(API_URL + '?action=getAllComplaints')
+    .then(function(res) { return res.json(); })
+    .then(function(res) {
+      showLoading(false);
+      if (res.success) {
+        complaintsData = res.data;
+        renderTable(complaintsData);
+      } else {
+        showToast('فشل تحميل البيانات', 'error');
+      }
+    })
+    .catch(function(err) {
+      showLoading(false);
+      showToast('خطأ في الاتصال', 'error');
+    });
 }
 
-// ─── Build Filters from UI ────────────────────────────────────
-function buildFilters() {
-  var f = {
-    status:   val('fStatus'),
-    category: val('fCategory'),
-    severity: val('fSeverity'),
-    dateFrom: val('fDateFrom'),
-    dateTo:   val('fDateTo'),
-    search:   val('searchInput'),
-    page:     ADMIN.currentPage,
-    pageSize: ADMIN.pageSize,
-  };
-  // SLA breach quick filter
-  if (ADMIN.filters.__breach) { f.slaBreached = 'نعم'; f.status = ''; }
-  return f;
+function renderTable(data) {
+  var tbody = document.getElementById('adminTableBody');
+  var meta = document.getElementById('tableMeta');
+  
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="table-empty">لا توجد شكاوى لعرضها</td></tr>';
+    meta.innerText = 'العدد: 0';
+    return;
+  }
+  
+  meta.innerText = 'العدد: ' + data.length + ' شكوى';
+  var html = '';
+  
+  for (var i = 0; i < data.length; i++) {
+    var c = data[i];
+    
+    // Status Badge
+    var statusClass = 'closed';
+    if (c.status === 'جديدة') statusClass = 'new';
+    else if (c.status === 'تحت المراجعة') statusClass = 'review';
+    else if (c.status === 'تم الحل') statusClass = 'resolved';
+    
+    // Severity Badge
+    var sevClass = 'sev-low';
+    if (c.severity === 'عالٍ' || c.severity === 'عالي') sevClass = 'sev-high';
+    else if (c.severity === 'متوسط') sevClass = 'sev-med';
+    
+    html += '<tr>';
+    html += '  <td><strong>#' + (c.id || '-') + '</strong></td>';
+    html += '  <td>' + (c.name || 'مجهول') + '<br><small style="color:#94a3b8">' + (c.phone || '-') + '</small></td>';
+    html += '  <td>' + (c.facility || '-') + '<br><small style="color:#94a3b8">' + (c.category || '-') + '</small></td>';
+    html += '  <td><span class="badge ' + statusClass + '">' + (c.status || '-') + '</span></td>';
+    html += '  <td><span class="badge ' + sevClass + '">' + (c.severity || '-') + '</span></td>';
+    html += '  <td><button class="btn-icon" onclick="openModal(\'' + c.id + '\')">👁️ عرض</button></td>';
+    html += '  <td><button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="openModal(\'' + c.id + '\')">معالجة ⚙️</button></td>';
+    html += '</tr>';
+  }
+  
+  tbody.innerHTML = html;
+}
+
+// ─── الفلاتر ───
+var searchTimer;
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(applyFilters, 300);
 }
 
 function applyFilters() {
-  ADMIN.currentPage = 1;
-  loadComplaints();
-}
-
-function resetFilters() {
-  ['fStatus','fCategory','fSeverity','fDateFrom','fDateTo'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.value = '';
+  var s = document.getElementById('searchInput').value.toLowerCase();
+  var st = document.getElementById('fStatus').value;
+  var sv = document.getElementById('fSeverity').value;
+  
+  var filtered = complaintsData.filter(function(c) {
+    var matchSearch = !s || (c.name||'').toLowerCase().includes(s) || (c.id||'').toString().includes(s);
+    var matchStatus = !st || c.status === st;
+    var matchSev = !sv || c.severity === sv;
+    return matchSearch && matchStatus && matchSev;
   });
-  document.getElementById('searchInput').value = '';
-  ADMIN.filters = {};
-  document.querySelectorAll('.pill').forEach(function(p) { p.classList.remove('active'); });
-  document.querySelector('.pill[data-status=""]').classList.add('active');
-  ADMIN.currentPage = 1;
-  loadComplaints();
+  
+  renderTable(filtered);
 }
 
-function quickFilter(el, status) {
-  document.querySelectorAll('.pill').forEach(function(p) { p.classList.remove('active'); });
-  el.classList.add('active');
-  ADMIN.filters.__breach = (status === '__breach');
-  var fStatus = document.getElementById('fStatus');
-  if (fStatus) fStatus.value = (status !== '__breach') ? status : '';
-  ADMIN.currentPage = 1;
-  loadComplaints();
-}
-
-function debounceSearch() {
-  clearTimeout(ADMIN.searchTimer);
-  ADMIN.searchTimer = setTimeout(applyFilters, 400);
-}
-
-// ─── Render Table ─────────────────────────────────────────────
-function renderTable() {
-  var tbody = document.getElementById('adminTableBody');
-  var meta  = document.getElementById('tableMeta');
-  if (!tbody) return;
-
-  var total = ADMIN.totalCount;
-  var start = (ADMIN.currentPage - 1) * ADMIN.pageSize + 1;
-  var end   = Math.min(start + ADMIN.pageSize - 1, total);
-  setText('tableMeta', 'عرض ' + start + ' – ' + end + ' من ' + total + ' شكوى');
-
-  if (ADMIN.complaints.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" class="table-empty">لا توجد نتائج</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = ADMIN.complaints.map(function(c) {
-    var rowCls = c.slaBreached ? 'sla-breach' : '';
-    return '<tr class="' + rowCls + '" onclick="openModal(\'' + c.id + '\')">'
-      + '<td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" value="' + c.id + '"></td>'
-      + '<td><code style="font-size:.7rem;color:#60a5fa">' + (c.id||'') + '</code></td>'
-      + '<td>' + escHtml(c.name||'') + '</td>'
-      + '<td style="direction:ltr;text-align:right">' + (c.phone||'') + '</td>'
-      + '<td>' + (c.category||'') + '</td>'
-      + '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(c.providerName||'') + '</td>'
-      + '<td>' + statusBadge(c.status) + '</td>'
-      + '<td>' + slaBadge(c.slaStatus, c.slaBreached) + '</td>'
-      + '<td>' + severityBadge(c.severity) + '</td>'
-      + '<td style="font-size:.7rem;color:#94a3b8;white-space:nowrap">' + fmtDate(c.timestamp) + '</td>'
-      + '<td><button class="btn-action" onclick="event.stopPropagation();openModal(\'' + c.id + '\')">تحديث</button></td>'
-      + '</tr>';
-  }).join('');
-}
-
-// ─── Pagination ───────────────────────────────────────────────
-function renderPagination() {
-  var container = document.getElementById('pagination');
-  if (!container) return;
-  var tp = ADMIN.totalPages;
-  var cp = ADMIN.currentPage;
-  if (tp <= 1) { container.innerHTML = ''; return; }
-
-  var html = '';
-  html += '<button class="page-btn" onclick="gotoPage(' + (cp-1) + ')" ' + (cp<=1?'disabled':'') + '>← السابق</button>';
-  for (var p = 1; p <= tp; p++) {
-    if (p === 1 || p === tp || Math.abs(p - cp) <= 2) {
-      html += '<button class="page-btn' + (p===cp?' active':'') + '" onclick="gotoPage(' + p + ')">' + p + '</button>';
-    } else if (Math.abs(p - cp) === 3) {
-      html += '<span style="color:#94a3b8;padding:0 4px">…</span>';
-    }
-  }
-  html += '<button class="page-btn" onclick="gotoPage(' + (cp+1) + ')" ' + (cp>=tp?'disabled':'') + '>التالي →</button>';
-  container.innerHTML = html;
-}
-
-function gotoPage(p) {
-  if (p < 1 || p > ADMIN.totalPages) return;
-  ADMIN.currentPage = p;
-  loadComplaints();
-}
-
-// ─── Topbar Stats ─────────────────────────────────────────────
-function renderTopbarStats() {
-  var container = document.getElementById('topbarStats');
-  if (!container) return;
-  var c = ADMIN.complaints;
-  var newCount  = ADMIN.complaints.filter(function(x){ return x.status==='جديدة'; }).length;
-  container.innerHTML =
-    '<div class="stat-chip"><strong>' + ADMIN.totalCount + '</strong> إجمالي</div>'
-  + '<div class="stat-chip" style="color:#f87171"><strong>' + newCount + '</strong> جديدة</div>';
-}
-
-// ─── Modal ────────────────────────────────────────────────────
+// ─── النافذة المنبثقة (Modal) ───
 function openModal(id) {
-  var c = ADMIN.complaints.find(function(x){ return x.id === id; });
+  var c = complaintsData.find(function(x) { return String(x.id) === String(id); });
   if (!c) return;
-  ADMIN.currentId = id;
-
-  document.getElementById('modalTitle').textContent = '📋 ' + id;
-
-  // ── بناء تفاصيل الشكوى ──────────────────────────────────────
-  var audioSection = '';
-  if (c.hasAudio && c.audioUrl) {
-    audioSection =
-      '<div class="detail-item full">' +
-        '<div class="detail-label">🎙️ التسجيل الصوتي</div>' +
-        '<div class="detail-value">' +
-          '<audio id="modalAudio" controls style="width:100%;border-radius:8px;margin-bottom:8px" src="' + c.audioUrl + '"></audio>' +
-          '<button class="btn-transcribe" id="transcribeBtn" onclick="transcribeAudio()">' +
-            '📝 تفريغ النص الصوتي (Speech-to-Text)' +
-          '</button>' +
-          '<div id="transcriptBox" class="transcript-box" style="display:none"></div>' +
-        '</div>' +
-      '</div>';
-  }
-
-  var imagesSection = '';
-  if (c.hasImages && c.imageUrls && c.imageUrls.length > 0) {
-    var imgs = Array.isArray(c.imageUrls) ? c.imageUrls : String(c.imageUrls).split(',');
-    imagesSection =
-      '<div class="detail-item full">' +
-        '<div class="detail-label">📎 المرفقات (' + imgs.length + ' صورة)</div>' +
-        '<div class="detail-value">' +
-          '<div class="img-gallery">' +
-            imgs.filter(Boolean).map(function(url, i) {
-              var u = url.trim();
-              return '<a href="' + u + '" target="_blank" class="img-thumb-wrap" title="صورة ' + (i+1) + '">' +
-                       '<img src="' + u + '" class="img-thumb" onerror="this.parentElement.style.display=\'none\'">' +
-                       '<span class="img-num">' + (i+1) + '</span>' +
-                     '</a>';
-            }).join('') +
-          '</div>' +
-        '</div>' +
-      '</div>';
-  }
-
-  document.getElementById('complaintDetails').innerHTML = [
-    detailItem('الاسم',          c.name),
-    detailItem('الرقم القومي',   c.nationalId),
-    detailItem('الهاتف',         c.phone, 'dir="ltr"'),
-    detailItem('الفئة',          c.category),
-    detailItem('المنفذ',         c.providerName),
-    detailItem('المنطقة',        c.location),
-    detailItem('الحالة',         statusBadge(c.status)),
-    detailItem('SLA',            slaBadge(c.slaStatus, c.slaBreached)),
-    detailItem('الخطورة',        severityBadge(c.severity)),
-    detailItem('تاريخ التقديم',  fmtDate(c.timestamp)),
-    c.closedAt ? detailItem('تاريخ الإغلاق', fmtDate(c.closedAt)) : '',
-    c.text ? '<div class="detail-item full"><div class="detail-label">💬 نص الشكوى</div><div class="detail-value complaint-text">' + escHtml(c.text) + '</div></div>' : '',
-    audioSection,
-    imagesSection,
-    c.resolutionNote ? '<div class="detail-item full"><div class="detail-label">✅ ملاحظة الحل</div><div class="detail-value" style="color:#4ade80">' + escHtml(c.resolutionNote) + '</div></div>' : '',
-  ].join('');
-
-  document.getElementById('modalStatus').value   = c.status || '';
-  document.getElementById('modalAssigned').value = c.assignedTo || '';
-  document.getElementById('modalNote').value     = c.resolutionNote || '';
-  document.getElementById('saveBtn').disabled    = false;
-
-  document.getElementById('modalOverlay').classList.add('open');
-}
-
-// ─── Speech-to-Text (Web Speech API) ─────────────────────────
-function transcribeAudio() {
-  var btn = document.getElementById('transcribeBtn');
-  var box = document.getElementById('transcriptBox');
-  if (!box || !btn) return;
-
-  // التحقق من دعم المتصفح
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    box.style.display = 'block';
-    box.innerHTML = '<span style="color:#f87171">⚠️ متصفحك لا يدعم ميزة التعرف على الكلام. يُنصح باستخدام Google Chrome.</span>';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ جارٍ التفريغ... (شغّل الصوت أولاً)';
-  box.style.display = 'block';
-  box.innerHTML = '<div class="transcript-listening">🎙️ يستمع الآن... شغّل الملف الصوتي</div>';
-
-  var recognition = new SpeechRecognition();
-  recognition.lang = 'ar-EG';
-  recognition.continuous = true;
-  recognition.interimResults = true;
-
-  var finalText = '';
-  recognition.onresult = function(event) {
-    var interim = '';
-    for (var i = event.resultIndex; i < event.results.length; i++) {
-      if (event.results[i].isFinal) {
-        finalText += event.results[i][0].transcript + ' ';
-      } else {
-        interim += event.results[i][0].transcript;
-      }
-    }
-    box.innerHTML = '<div class="transcript-final">' + escHtml(finalText) + '</div>' +
-                    (interim ? '<div class="transcript-interim">' + escHtml(interim) + '</div>' : '');
-  };
-
-  recognition.onerror = function(e) {
-    box.innerHTML = '<span style="color:#f87171">⚠️ خطأ: ' + e.error + ' — تأكد من السماح للمتصفح بالميكروفون.</span>';
-    btn.disabled = false;
-    btn.textContent = '📝 إعادة المحاولة';
-  };
-
-  recognition.onend = function() {
-    btn.disabled = false;
-    btn.textContent = '📝 تفريغ مرة أخرى';
-    if (!finalText.trim()) {
-      box.innerHTML += '<div style="color:#fbbf24;margin-top:4px;font-size:.8rem">💡 نصيحة: شغّل الملف الصوتي فور الضغط على التفريغ.</div>';
-    }
-  };
-
-  recognition.start();
-
-  // إيقاف تلقائي بعد 120 ثانية
-  setTimeout(function() { try { recognition.stop(); } catch(e){} }, 120000);
-}
-
-
-function detailItem(label, val, extra) {
-  return '<div class="detail-item"><div class="detail-label">' + label + '</div>'
-       + '<div class="detail-value" ' + (extra||'') + '>' + (val||'—') + '</div></div>';
+  currentComplaintId = id;
+  
+  // ملء التفاصيل
+  var details = document.getElementById('complaintDetails');
+  details.innerHTML = `
+    <p>رقم الشكوى: <strong>#${c.id}</strong></p>
+    <p>مقدم الشكوى: <strong>${c.name} (${c.phone})</strong></p>
+    <p>المنشأة: <strong>${c.facility}</strong></p>
+    <p>تاريخ التسجيل: <strong>${c.date}</strong></p>
+  `;
+  
+  // تعيين القيم الحالية في الفورم
+  document.getElementById('modalStatus').value = c.status || 'جديدة';
+  document.getElementById('modalNote').value = '';
+  
+  document.getElementById('modalOverlay').style.display = 'flex';
+  setTimeout(function() {
+    document.getElementById('modalOverlay').classList.add('show');
+  }, 10);
 }
 
 function closeModal(e) {
-  if (e && e.target !== document.getElementById('modalOverlay')) return;
-  document.getElementById('modalOverlay').classList.remove('open');
-  ADMIN.currentId = null;
+  if (e && e.target !== document.getElementById('modalOverlay') && e.target.className !== 'btn-close' && e.target.className !== 'btn-secondary') return;
+  document.getElementById('modalOverlay').classList.remove('show');
+  setTimeout(function() {
+    document.getElementById('modalOverlay').style.display = 'none';
+  }, 300);
 }
 
-// ─── Save Update ──────────────────────────────────────────────
+// ─── الحفظ ───
 function saveUpdate() {
-  var status = val('modalStatus');
-  var note   = val('modalNote');
-  var assign = val('modalAssigned');
-
-  if (!status) { showToast('اختر الحالة الجديدة', 'error'); return; }
-  if ((status === 'تم الحل' || status === 'مغلقة') && !note) {
-    showToast('أدخل ملاحظة الحل عند الإغلاق', 'error'); return;
-  }
-
-  var btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ جارٍ الحفظ...';
-
-  callApi('updateComplaintStatus', {
-    token:   ADMIN.token,
-    payload: {
-      complaintId:    ADMIN.currentId,
-      status:         status,
-      resolutionNote: note,
-      assignedTo:     assign,
-      token:          ADMIN.token,
-    },
-  }, function(err, res) {
-    btn.disabled    = false;
-    btn.textContent = '💾 حفظ التحديث';
-    if (err || !res || !res.success) {
-      showToast('فشل التحديث: ' + (res && res.error || 'خطأ'), 'error');
-      return;
-    }
-    showToast('✅ تم التحديث بنجاح', 'success');
-    document.getElementById('modalOverlay').classList.remove('open');
-    loadComplaints(); // إعادة تحميل الجدول
-  });
-}
-
-// ─── Export CSV ───────────────────────────────────────────────
-function exportCsv() {
-  if (ADMIN.complaints.length === 0) { showToast('لا توجد بيانات للتصدير', 'error'); return; }
-  var headers = ['رقم الشكوى','التاريخ','الاسم','الهاتف','الفئة','المنفذ','الحالة','SLA','الخطورة','نص الشكوى'];
-  var rows    = ADMIN.complaints.map(function(c) {
-    return [
-      c.id, fmtDate(c.timestamp), c.name, c.phone,
-      c.category, c.providerName, c.status, c.slaStatus,
-      c.severity, (c.text||'').replace(/\n/g,' ').substring(0,200),
-    ].map(function(v){ return '"' + String(v||'').replace(/"/g,'""') + '"'; }).join(',');
-  });
-  var csv  = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
-  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href   = url;
-  a.download = 'شكاوى-' + new Date().toLocaleDateString('ar-EG').replace(/\//g,'-') + '.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('✅ تم تصدير ' + ADMIN.complaints.length + ' شكوى', 'success');
-}
-
-// ─── Select All ───────────────────────────────────────────────
-function toggleSelectAll(master) {
-  document.querySelectorAll('.row-check').forEach(function(c){ c.checked = master.checked; });
-}
-
-// ─── Demo Mode ───────────────────────────────────────────────
-function renderDemoComplaints() {
-  var statuses = ['جديدة','تحت المراجعة','تم الحل','مغلقة'];
-  var cats     = ['وحدة صحية','مستشفى رعاية','مستشفى متعاقد','معمل متعاقد'];
-  var sevs     = ['عالٍ','متوسط','منخفض'];
-  var slaStats = ['في الوقت','تحذير','متأخرة'];
-  var names    = ['أحمد محمد','فاطمة علي','محمد حسن','سارة إبراهيم','خالد عبدالله'];
-  var demo     = [];
-  for (var i = 0; i < 15; i++) {
-    demo.push({
-      id:          'CMP-260' + String(i).padStart(3,'0') + '-' + (1000+i),
-      timestamp:   new Date(Date.now() - i * 86400000),
-      name:        names[i % names.length],
-      nationalId:  '2901' + String(i).padStart(10,'0'),
-      phone:       '0101234' + String(i).padStart(4,'0'),
-      category:    cats[i % cats.length],
-      providerCode: 'UNIT00' + (i+1),
-      providerName: 'وحدة طب أسرة #' + (i+1),
-      location:    'الأقصر',
-      status:      statuses[i % statuses.length],
-      slaStatus:   slaStats[i % slaStats.length],
-      slaBreached: (i % 5 === 0),
-      severity:    sevs[i % sevs.length],
-      text:        'هذه شكوى تجريبية رقم ' + (i+1) + ' — يعمل النظام في وضع العرض التجريبي.',
-      hasAudio:    false, audioUrl: '',
-      assignedTo: '', resolutionNote: '',
-    });
-  }
-  ADMIN.complaints = demo;
-  ADMIN.totalCount = demo.length;
-  ADMIN.totalPages = 1;
-  renderTable();
-  renderPagination();
-  renderTopbarStats();
-  setText('tableMeta', '⚠️ بيانات تجريبية — اربط Apps Script للبيانات الحقيقية');
-  showFullLoading(false);
-}
-
-// ─── API Call ─────────────────────────────────────────────────
-function callApi(action, params, cb) {
-  var url = (typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL && SCRIPT_URL.indexOf('script.google.com') !== -1)
-    ? SCRIPT_URL : null;
-
-  if (!url) { setTimeout(function(){ cb(new Error('no url'), null); }, 300); return; }
-
-  var body = JSON.stringify(Object.assign({ action: action }, params || {}));
-  var ctrl = new AbortController();
-  var t    = setTimeout(function(){ ctrl.abort(); }, 25000);
-  fetch(url, {
-    method: 'POST', headers: { 'Content-Type': 'text/plain' },
-    body: body, signal: ctrl.signal,
+  var newStatus = document.getElementById('modalStatus').value;
+  var note = document.getElementById('modalNote').value;
+  
+  if (!newStatus) return showToast('يجب اختيار حالة!', 'error');
+  
+  document.getElementById('saveBtn').innerText = 'جارٍ الحفظ...';
+  
+  var payload = {
+    action: 'updateComplaint',
+    id: currentComplaintId,
+    status: newStatus,
+    note: note,
+    assigned: currentUser.name // وضع اسم الموظف من الجلسة الحالية
+  };
+  
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
   })
-  .then(function(r){ clearTimeout(t); return r.json(); })
-  .then(function(d){ cb(null, d); })
-  .catch(function(e){ clearTimeout(t); cb(e, null); });
+  .then(function(res) { return res.json(); })
+  .then(function(res) {
+    document.getElementById('saveBtn').innerText = '💾 حفظ الإجراءات';
+    if (res.success) {
+      showToast('تم التحديث بنجاح!');
+      closeModal();
+      loadData(); // إعادة التحميل لتحديث الجدول
+    } else {
+      showToast('خطأ: ' + res.message, 'error');
+    }
+  })
+  .catch(function(err) {
+    document.getElementById('saveBtn').innerText = '💾 حفظ الإجراءات';
+    showToast('خطأ في الاتصال بالخادم', 'error');
+  });
 }
 
-// ─── Utilities ───────────────────────────────────────────────
-function val(id) {
-  var el = document.getElementById(id);
-  return el ? el.value.trim() : '';
+// ─── Helpers ───
+function showLoading(show) {
+  document.getElementById('fullLoading').style.display = show ? 'flex' : 'none';
 }
-function setText(id, v) { var e=document.getElementById(id); if(e) e.textContent=v; }
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function fmtDate(ts) {
-  if (!ts) return '---';
-  try { return new Date(ts).toLocaleDateString('ar-EG',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
-  catch(e){ return String(ts).slice(0,16); }
-}
-function showFullLoading(on) {
-  var el=document.getElementById('fullLoading');
-  if(el) el.style.display = on ? 'flex' : 'none';
-}
+
 function showToast(msg, type) {
-  var el = document.getElementById('toast');
-  if (!el) return;
-  el.textContent = msg;
-  el.className   = 'toast ' + (type||'info') + ' show';
-  setTimeout(function(){ el.classList.remove('show'); }, 4000);
-}
-function statusBadge(s) {
-  var map={'جديدة':'badge-new','تحت المراجعة':'badge-review','تم الحل':'badge-resolved','مغلقة':'badge-closed'};
-  return '<span class="badge '+(map[s]||'badge-closed')+'">'+(s||'')+'</span>';
-}
-function slaBadge(slaStatus, breached) {
-  if(slaStatus==='متأخرة'||breached) return '<span class="badge badge-breach">متأخرة ⚠️</span>';
-  if(slaStatus==='تحذير')            return '<span class="badge badge-warn">تحذير 🕐</span>';
-  return '<span class="badge badge-ok">في الوقت ✓</span>';
-}
-function severityBadge(s) {
-  if(s==='عالٍ')  return '<span class="badge badge-high">عالٍ 🔴</span>';
-  if(s==='متوسط') return '<span class="badge badge-medium">متوسط 🟡</span>';
-  return '<span class="badge badge-low">منخفض 🟢</span>';
+  var t = document.getElementById('toast');
+  t.innerText = msg;
+  if (type === 'error') t.classList.add('error');
+  else t.classList.remove('error');
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
 }
