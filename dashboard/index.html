@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة التحكم التنفيذية — UHIA الأقصر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <img src="https://upload.wikimedia.org/wikipedia/ar/a/ab/%D8%A7%D9%84%D9%87%D9%8A%D8%A6%D8%A9_%D8%A7%D9%84%D8%B9%D8%A7%D9%85%D8%A9_%D9%84%D9%84%D8%AA%D8%A3%D9%85%D9%8A%D9%86_%D8%A7%D9%84%D8%B5%D8%AD%D9%8A_%D8%A7%D9%84%D8%B4%D8%A0%D9%85%D9%84_%28%D9%85%D8%B5%D8%B1%29.png" alt="شعار">
+    <div class="sidebar-title">
+      <span class="sb-org">UHIA</span>
+      <span class="sb-branch">فرع الأقصر</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#overview"   class="nav-item active" data-section="overview">
+      <span class="nav-icon">📊</span><span>نظرة عامة</span>
+    </a>
+    <a href="#complaints" class="nav-item" data-section="complaints">
+      <span class="nav-icon">⚠️</span><span>الشكاوى</span>
+    </a>
+    <a href="#surveys"    class="nav-item" data-section="surveys">
+      <span class="nav-icon">📋</span><span>الاستبيانات</span>
+    </a>
+    <a href="#sla"        class="nav-item" data-section="sla">
+      <span class="nav-icon">🕐</span><span>SLA</span>
+    </a>
+    <a href="#analytics"  class="nav-item" data-section="analytics">
+      <span class="nav-icon">🔍</span><span>التحليل</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sb-time" id="liveTime">--:--:--</div>
+    <div class="sb-date" id="liveDate">---</div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main-content">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="topbar-title">لوحة التحكم التنفيذية</div>
+    <div class="topbar-actions">
+      <span class="last-update" id="lastUpdate">جارٍ التحميل...</span>
+      <button class="btn-refresh" id="refreshBtn" onclick="loadData(true)">🔄 تحديث</button>
+      <a href="../admin/index.html" class="btn-admin">⚙️ لوحة الإدارة</a>
+    </div>
+  </header>
+
+  <!-- ═══ SECTION: OVERVIEW ═══ -->
+  <section id="overview" class="section active">
+
+    <!-- KPI CARDS -->
+    <div class="kpi-grid">
+      <div class="kpi-card primary" id="kpi-total">
+        <div class="kpi-icon">📋</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kv-total">--</div>
+          <div class="kpi-label">إجمالي الشكاوى</div>
+        </div>
+        <div class="kpi-trend" id="kt-total"></div>
+      </div>
+      <div class="kpi-card danger" id="kpi-open">
+        <div class="kpi-icon">🔴</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kv-open">--</div>
+          <div class="kpi-label">مفتوحة</div>
+        </div>
+      </div>
+      <div class="kpi-card success" id="kpi-resolved">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kv-resolved">--</div>
+          <div class="kpi-label">تم حلها</div>
+        </div>
+      </div>
+      <div class="kpi-card warning" id="kpi-sla">
+        <div class="kpi-icon">⚠️</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kv-sla">--%</div>
+          <div class="kpi-label">نسبة الالتزام بـ SLA</div>
+        </div>
+      </div>
+      <div class="kpi-card info" id="kpi-sat">
+        <div class="kpi-icon">⭐</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kv-sat">--</div>
+          <div class="kpi-label">معدل الرضا (من 5)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <h3>📈 اتجاه الشكاوى — آخر 30 يوماً</h3>
+          <div class="chart-legend"></div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>🏷️ توزيع حسب الفئة</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLA STATUS + LOCATION -->
+    <div class="bottom-row">
+      <div class="panel sla-panel">
+        <h3 class="panel-title">🕐 حالة SLA اللحظية</h3>
+        <div class="sla-meters" id="slaMeterContainer">
+          <div class="sla-meter breached">
+            <div class="sla-count" id="sla-breached">--</div>
+            <div class="sla-label">متأخرة</div>
+          </div>
+          <div class="sla-meter warning">
+            <div class="sla-count" id="sla-warning">--</div>
+            <div class="sla-label">تحذير</div>
+          </div>
+          <div class="sla-meter ok">
+            <div class="sla-count" id="sla-ok">--</div>
+            <div class="sla-label">في الوقت</div>
+          </div>
+        </div>
+        <div id="slaBreachedList" class="sla-list"></div>
+      </div>
+
+      <div class="panel location-panel">
+        <h3 class="panel-title">📍 توزيع حسب المنطقة</h3>
+        <div id="locationBars" class="location-bars"></div>
+      </div>
+    </div>
+
+    <!-- RECENT COMPLAINTS -->
+    <div class="panel recent-panel">
+      <div class="panel-header">
+        <h3 class="panel-title">📋 أحدث الشكاوى</h3>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="recentTable">
+          <thead>
+            <tr>
+              <th>رقم الشكوى</th>
+              <th>الاسم</th>
+              <th>الفئة</th>
+              <th>المنفذ</th>
+              <th>الحالة</th>
+              <th>SLA</th>
+              <th>الخطورة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody id="recentTableBody">
+            <tr><td colspan="8" class="table-empty">جارٍ التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  <!-- ═══ SECTION: COMPLAINTS ═══ -->
+  <section id="complaints" class="section">
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">📋 جميع الشكاوى الحديثة (قراءة فقط)</h3>
+        <a href="../admin/index.html" class="btn-admin" style="font-size: 0.85rem; padding: 6px 12px;">انتقل للوحة الإدارة للتحكم</a>
+      </div>
+      <div class="table-wrap" style="max-height: 70vh; overflow-y: auto;">
+        <table class="data-table" id="allComplaintsTable">
+          <thead>
+            <tr>
+              <th>رقم الشكوى</th>
+              <th>الاسم</th>
+              <th>الفئة</th>
+              <th>المنفذ</th>
+              <th>الحالة</th>
+              <th>SLA</th>
+              <th>الخطورة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody id="allComplaintsTableBody">
+            <tr><td colspan="8" class="table-empty">جارٍ التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SECTION: SURVEYS (POWERFUL DASHBOARD) ═══ -->
+  <section id="surveys" class="section">
+    <!-- Survey KPI Cards -->
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+      <div class="kpi-card info">
+        <div class="kpi-icon">📝</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="sv-total">--</div>
+          <div class="kpi-label">إجمالي الاستبيانات</div>
+        </div>
+      </div>
+      <div class="kpi-card success">
+        <div class="kpi-icon">🤩</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="sv-promoters">--%</div>
+          <div class="kpi-label">نسبة السعداء (Promoters)</div>
+        </div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-icon">😡</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="sv-detractors">--%</div>
+          <div class="kpi-label">نسبة المستائين (Detractors)</div>
+        </div>
+      </div>
+      <div class="kpi-card primary">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="sv-nps">--</div>
+          <div class="kpi-label">مؤشر NPS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Survey Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>🕸️ الرضا حسب قسم الخدمة (متوسط من 5)</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="surveyRadarChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <h3>📊 أفضل 5 منشآت طبية (تقييماً)</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="topProvidersChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <h3>📉 اتجاه معدل الرضا اليومي</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="surveyTrendChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>🔻 أسوأ 5 منشآت طبية (تقييماً)</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="bottomProvidersChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SECTION: SLA ═══ -->
+  <section id="sla" class="section">
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">🕐 تفاصيل الالتزام بالوقت (SLA)</h3>
+      </div>
+      <div style="padding: 20px; color: #94a3b8; text-align: center;">
+        <p>هذه الشاشة محجوزة لتحليلات SLA التفصيلية مستقبلاً.</p>
+        <p>يرجى متابعة حالة SLA اللحظية من (نظرة عامة).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SECTION: ANALYTICS ═══ -->
+  <section id="analytics" class="section">
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <div class="chart-header"><h3>📊 توزيع الخطورة</h3></div>
+        <div class="chart-wrap half"><canvas id="severityChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- WORD CLOUD -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">☁️ أبرز الكلمات في نصوص الشكاوى</h3>
+        <span class="panel-sub">مبني على التحليل النصي الآلي</span>
+      </div>
+      <div class="word-cloud" id="wordCloud">
+        <div class="loading-spin"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spin-circle"></div>
+    <p>جارٍ تحميل البيانات...</p>
+  </div>
+</div>
+
+<!-- ERROR TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>
