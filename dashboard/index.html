@@ -109,30 +109,79 @@
             <div class="kpi-val" id="kpiSurveyTotal">--</div>
             <div class="kpi-icon">📋</div>
           </div>
-        </div>
-        
-        <div class="grid-2 mt-20">
-          <div class="glass-panel">
-            <div class="panel-header">مؤشر الولاء الصافي (NPS Gauge)</div>
-            <div class="chart-container"><canvas id="npsChart"></canvas></div>
-            <p style="text-align:center; color:var(--text-muted); font-size:0.9rem; margin-top:10px;">
-              يقيس مدى توصية المنتفعين بالخدمة للمقربين منهم
-            </p>
-          </div>
-          <div class="glass-panel">
-            <div class="panel-header">أبعاد جودة الخدمة (Radar Chart)</div>
-            <div class="chart-container radar"><canvas id="radarChart"></canvas></div>
+          <div class="glass-card kpi-card">
+            <div class="kpi-title">التقييم العام للخدمة</div>
+            <div class="kpi-val" id="kpiSurveyAvg">-- / 5</div>
+            <div class="kpi-icon">⭐</div>
           </div>
         </div>
 
-        <div class="grid-2 mt-20">
-          <div class="glass-panel">
-            <div class="panel-header">أفضل الجهات تقييماً (Average NPS)</div>
-            <div class="chart-container"><canvas id="surveyFacChart"></canvas></div>
+        <!-- أزرار تبويبات الاستبيانات -->
+        <div class="survey-tabs mt-20">
+          <button class="survey-tab-btn active" onclick="switchSurveyTab('s-overview')">📊 نظرة عامة</button>
+          <button class="survey-tab-btn" onclick="switchSurveyTab('s-dimensions')">🎯 الأبعاد والموردين</button>
+          <button class="survey-tab-btn" onclick="switchSurveyTab('s-questions')">❓ تحليل الأسئلة</button>
+        </div>
+
+        <!-- Tab 1: Overview -->
+        <div id="s-overview" class="survey-tab-content" style="display:block;">
+          <div class="grid-2 mt-20">
+            <div class="glass-panel">
+              <div class="panel-header">1. التوزيع الزمني للأداء (Trend Line)</div>
+              <div class="chart-container"><canvas id="sTrendChart"></canvas></div>
+            </div>
+            <div class="glass-panel">
+              <div class="panel-header">2. توزيع العينات حسب الفئة (Donut)</div>
+              <div class="chart-container"><canvas id="sCatDonut"></canvas></div>
+            </div>
           </div>
-          <div class="glass-panel">
-            <div class="panel-header">مؤشر الرضا الزمني (NPS Trend)</div>
-            <div class="chart-container"><canvas id="surveyTrendChart"></canvas></div>
+          <div class="grid-2 mt-20">
+            <div class="glass-panel">
+              <div class="panel-header">3. متوسط التقييم حسب الفئة (Bar)</div>
+              <div class="chart-container"><canvas id="sCatBar"></canvas></div>
+            </div>
+            <div class="glass-panel">
+              <div class="panel-header">4. التوزيع الجغرافي للعينات (Bar)</div>
+              <div class="chart-container"><canvas id="sLocBar"></canvas></div>
+            </div>
+          </div>
+          <div class="glass-panel mt-20">
+            <div class="panel-header">5. المصفوفة الحرارية (Heatmap Table)</div>
+            <div class="table-responsive">
+              <table class="data-table" id="sMatrixTable">
+                <!-- Heatmap Table inserted via JS -->
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Dimensions & Providers -->
+        <div id="s-dimensions" class="survey-tab-content" style="display:none;">
+          <div class="grid-2 mt-20">
+            <div class="glass-panel">
+              <div class="panel-header">6. توزيع الأبعاد الخمسة (Radar)</div>
+              <div class="chart-container radar"><canvas id="sRadar"></canvas></div>
+            </div>
+            <div class="glass-panel">
+              <div class="panel-header">7. مؤشر الولاء الصافي (NPS Gauge)</div>
+              <div class="chart-container"><canvas id="sNps"></canvas></div>
+            </div>
+          </div>
+          <div class="glass-panel mt-20">
+            <div class="panel-header">8. أداء الموردين: التقييم مقابل حجم العينة (Scatter Plot)</div>
+            <div class="chart-container"><canvas id="sScatter"></canvas></div>
+          </div>
+          <div class="glass-panel mt-20">
+            <div class="panel-header">9. ترتيب الموردين (Ranked Bar Chart)</div>
+            <div class="chart-container" style="height: 400px;"><canvas id="sFacRank"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Questions Analysis -->
+        <div id="s-questions" class="survey-tab-content" style="display:none;">
+          <div class="glass-panel mt-20">
+            <div class="panel-header">10. أداء الأسئلة مقسماً بالفئات (Grouped Bar)</div>
+            <div class="chart-container" style="height: 400px;"><canvas id="sQuesGrouped"></canvas></div>
           </div>
         </div>
       </section>

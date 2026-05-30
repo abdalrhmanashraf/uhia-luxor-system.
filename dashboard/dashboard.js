@@ -7,8 +7,17 @@ var API_URL = window.SCRIPT_URL || '';
 
 // كائنات الرسوم البيانية لتحديثها لاحقاً
 var charts = {
-  fac: null, cat: null, trend: null, nps: null, radar: null, surveyFac: null, surveyTrend: null
+  fac: null, cat: null, trend: null,
+  sTrend: null, sCatDonut: null, sCatBar: null, sLocBar: null,
+  sRadar: null, sNps: null, sScatter: null, sFacRank: null, sQuesGrouped: null
 };
+
+function switchSurveyTab(tabId) {
+  document.querySelectorAll('.survey-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.survey-tab-content').forEach(c => c.style.display = 'none');
+  event.target.classList.add('active');
+  document.getElementById(tabId).style.display = 'block';
+}
 
 window.addEventListener('load', function() {
   updateClock();
@@ -134,52 +143,130 @@ function renderCharts(cData) {
     options: { responsive: true, maintainAspectRatio: false }
   });
 
-  // 4. NPS (Doughnut as Gauge)
-  var nps = cData.nps || {promoters:0, passives:0, detractors:0};
-  if(charts.nps) charts.nps.destroy();
-  charts.nps = new Chart(document.getElementById('npsChart'), {
-    type: 'doughnut',
-    data: {
-      labels: ['داعمون (Promoters)', 'محايدون (Passives)', 'منتقدون (Detractors)'],
-      datasets: [{ data: [nps.promoters, nps.passives, nps.detractors], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderWidth: 0 }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, circumference: 180, rotation: 270, plugins: { legend: { position: 'bottom' } } }
+  // --------------------------------------------------------
+  // V4.0 Advanced Survey Analytics Rendering
+  // --------------------------------------------------------
+  document.getElementById('kpiSurveyTotal').textContent = cData.surveyCount || 0;
+  var overallRadar = cData.radar || [0,0,0,0,0];
+  var totalAvg = overallRadar.reduce((a,b)=>a+b, 0) / 5;
+  document.getElementById('kpiSurveyAvg').textContent = totalAvg.toFixed(2) + ' / 5';
+
+  // 1. Trend Line (sTrendChart)
+  var trKeys = Object.keys(cData.sTrend || {}).sort();
+  var trendDatasets = [];
+  var colorPalette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+  var catSet = new Set();
+  trKeys.forEach(d => Object.keys(cData.sTrend[d]).forEach(c => catSet.add(c)));
+  Array.from(catSet).forEach((cat, idx) => {
+    trendDatasets.push({
+      label: cat,
+      data: trKeys.map(d => cData.sTrend[d] && cData.sTrend[d][cat] ? cData.sTrend[d][cat].s / cData.sTrend[d][cat].c : null),
+      borderColor: colorPalette[idx % colorPalette.length],
+      tension: 0.4
+    });
+  });
+  if(charts.sTrend) charts.sTrend.destroy();
+  charts.sTrend = new Chart(document.getElementById('sTrendChart'), {
+    type: 'line', data: { labels: trKeys, datasets: trendDatasets },
+    options: { responsive: true, maintainAspectRatio: false, spanGaps: true }
   });
 
-  // 5. Survey Radar
-  var radarData = cData.surveyRadar || [0,0,0,0,0];
-  if(charts.radar) charts.radar.destroy();
-  charts.radar = new Chart(document.getElementById('radarChart'), {
-    type: 'radar',
-    data: {
-      labels: ['الاستقبال والتسجيل', 'بيئة المنشأة والنظافة', 'الرعاية الطبية', 'شبكة مقدمي الخدمة', 'المعامل والأشعة'],
-      datasets: [{ label: 'متوسط التقييم (من 10)', data: radarData, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: '#3b82f6', pointBackgroundColor: '#fff' }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 10, ticks: { stepSize: 2, display: false } } } }
+  // 2. Category Donut (sCatDonut)
+  var cLabs = (cData.sCat || []).map(c => c.label);
+  var cVals = (cData.sCat || []).map(c => c.count);
+  if(charts.sCatDonut) charts.sCatDonut.destroy();
+  charts.sCatDonut = new Chart(document.getElementById('sCatDonut'), {
+    type: 'doughnut', data: { labels: cLabs, datasets: [{ data: cVals, backgroundColor: colorPalette, borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false }
   });
-  // 6. Survey Facilities
-  var sFacLabels = (cData.surveyFacilities || []).map(f => f.label);
-  var sFacVals = (cData.surveyFacilities || []).map(f => f.avgNps);
-  if(charts.surveyFac) charts.surveyFac.destroy();
-  charts.surveyFac = new Chart(document.getElementById('surveyFacChart'), {
-    type: 'bar',
-    data: {
-      labels: sFacLabels,
-      datasets: [{ label: 'متوسط مؤشر الولاء', data: sFacVals, backgroundColor: 'rgba(139, 92, 246, 0.7)', borderRadius: 5 }]
+
+  // 3. Category Bar (sCatBar)
+  var cAvg = (cData.sCat || []).map(c => c.avg);
+  if(charts.sCatBar) charts.sCatBar.destroy();
+  charts.sCatBar = new Chart(document.getElementById('sCatBar'), {
+    type: 'bar', data: { labels: cLabs, datasets: [{ label: 'متوسط التقييم', data: cAvg, backgroundColor: 'rgba(59, 130, 246, 0.7)' }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  // 4. Location Bar (sLocBar)
+  var locLabs = Object.keys(cData.sLoc || {});
+  var locVals = locLabs.map(l => cData.sLoc[l]);
+  if(charts.sLocBar) charts.sLocBar.destroy();
+  charts.sLocBar = new Chart(document.getElementById('sLocBar'), {
+    type: 'bar', data: { labels: locLabs, datasets: [{ label: 'عدد العينات', data: locVals, backgroundColor: 'rgba(16, 185, 129, 0.7)' }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  // 5. Matrix Table
+  var mTable = '<thead><tr><th>الموقع</th>' + Array.from(catSet).map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  Object.keys(cData.sLocCat || {}).forEach(loc => {
+    mTable += `<tr><td><strong>${loc}</strong></td>`;
+    Array.from(catSet).forEach(cat => {
+      var d = cData.sLocCat[loc][cat];
+      var val = d ? (d.s/d.c).toFixed(1) : '-';
+      var bg = d ? `rgba(59, 130, 246, ${Math.max(0.1, (d.s/d.c)/5)})` : 'transparent';
+      mTable += `<td style="background:${bg}; text-align:center;">${val}</td>`;
+    });
+    mTable += `</tr>`;
+  });
+  document.getElementById('sMatrixTable').innerHTML = mTable + '</tbody>';
+
+  // 6. Radar Chart
+  if(charts.sRadar) charts.sRadar.destroy();
+  charts.sRadar = new Chart(document.getElementById('sRadar'), {
+    type: 'radar', data: {
+      labels: ['الاستقبال والتسجيل', 'بيئة المنشأة والنظافة', 'الرعاية الطبية', 'شبكة مقدمي الخدمة', 'المعامل والأشعة'],
+      datasets: [{ label: 'متوسط الأداء', data: overallRadar, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: '#3b82f6', pointBackgroundColor: '#fff' }]
     },
+    options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 5 } } }
+  });
+
+  // 7. NPS
+  var nps = cData.nps || {promoters:0, passives:0, detractors:0};
+  if(charts.sNps) charts.sNps.destroy();
+  charts.sNps = new Chart(document.getElementById('sNps'), {
+    type: 'doughnut', data: {
+      labels: ['داعمون (4-5)', 'محايدون (3)', 'منتقدون (1-2)'],
+      datasets: [{ data: [nps.promoters, nps.passives, nps.detractors], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, circumference: 180, rotation: 270 }
+  });
+
+  // 8. Scatter Plot
+  var scatterData = (cData.sFac || []).map(f => ({ x: f.count, y: f.avg, provider: f.label }));
+  if(charts.sScatter) charts.sScatter.destroy();
+  charts.sScatter = new Chart(document.getElementById('sScatter'), {
+    type: 'scatter', data: {
+      datasets: [{ label: 'الموردين', data: scatterData, backgroundColor: '#8b5cf6', pointRadius: 8, pointHoverRadius: 10 }]
+    },
+    options: { 
+      responsive: true, maintainAspectRatio: false,
+      plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw.provider} (العدد: ${ctx.raw.x}, التقييم: ${ctx.raw.y})` } } }
+    }
+  });
+
+  // 9. Ranked Bar
+  var fLabs = (cData.sFac || []).slice(0,10).map(f => f.label);
+  var fVals = (cData.sFac || []).slice(0,10).map(f => f.avg);
+  if(charts.sFacRank) charts.sFacRank.destroy();
+  charts.sFacRank = new Chart(document.getElementById('sFacRank'), {
+    type: 'bar', data: { labels: fLabs, datasets: [{ label: 'التقييم', data: fVals, backgroundColor: '#3b82f6', borderRadius: 5 }] },
     options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
   });
 
-  // 7. Survey Trend
-  var sTrLabels = Object.keys(cData.surveyTrend || {}).sort();
-  var sTrVals = sTrLabels.map(l => cData.surveyTrend[l]);
-  if(charts.surveyTrend) charts.surveyTrend.destroy();
-  charts.surveyTrend = new Chart(document.getElementById('surveyTrendChart'), {
-    type: 'line',
-    data: {
-      labels: sTrLabels,
-      datasets: [{ label: 'متوسط الرضا اليومي', data: sTrVals, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.4 }]
-    },
+  // 10. Questions Grouped Bar
+  var qCats = Object.keys(cData.sQues || {});
+  var qDatasets = [];
+  ['q1', 'q2', 'q3', 'q4', 'q5'].forEach((q, i) => {
+    qDatasets.push({
+      label: ['الاستقبال', 'البيئة', 'الرعاية', 'الشبكة', 'المعامل'][i],
+      data: qCats.map(c => cData.sQues[c][q].c ? (cData.sQues[c][q].s / cData.sQues[c][q].c) : 0),
+      backgroundColor: colorPalette[i]
+    });
+  });
+  if(charts.sQuesGrouped) charts.sQuesGrouped.destroy();
+  charts.sQuesGrouped = new Chart(document.getElementById('sQuesGrouped'), {
+    type: 'bar', data: { labels: qCats, datasets: qDatasets },
     options: { responsive: true, maintainAspectRatio: false }
   });
 }
