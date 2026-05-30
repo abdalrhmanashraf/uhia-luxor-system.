@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة متابعة الشكاوى — UHIA الأقصر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="https://upload.wikimedia.org/wikipedia/ar/a/ab/%D8%A7%D9%84%D9%87%D9%8A%D8%A6%D8%A9_%D8%A7%D9%84%D8%B9%D8%A0%D9%85%D8%A9_%D9%84%D9%84%D8%AA%D8%A3%D9%85%D9%8A%D9%86_%D8%A7%D9%84%D8%B5%D8%AD%D9%8A_%D8%A7%D9%84%D8%B4%D8%A0%D9%85%D9%84_%28%D9%85%D8%B5%D8%B1%29.png" alt="شعار">
+    </div>
+    <h1 class="login-title">لوحة متابعة الشكاوى</h1>
+    <p class="login-sub">الهيئة العامة للتأمين الصحي الشامل — فرع الأقصر</p>
+    <div class="form-field">
+      <label>كلمة المرور</label>
+      <div class="pwd-wrap">
+        <input type="password" id="pwdInput" placeholder="أدخل كلمة المرور"
+               onkeydown="if(event.key==='Enter') doLogin()">
+        <button class="pwd-toggle" onclick="togglePwd()">👁</button>
+      </div>
+      <span class="field-error" id="loginError"></span>
+    </div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">
+      <span id="loginBtnText">دخول</span>
+    </button>
+    <p class="login-hint">كلمة المرور الافتراضية: <code>UHIA-LUXOR-2026</code></p>
+  </div>
+</div>
+
+<!-- ═══ ADMIN PANEL ═══ -->
+<div class="admin-wrap" id="adminWrap" style="display:none">
+
+  <!-- TOPBAR -->
+  <header class="admin-topbar">
+    <div class="topbar-right">
+      <span class="brand-badge">⚙️ لوحة الإدارة</span>
+      <span class="branch-tag">فرع الأقصر</span>
+    </div>
+    <div class="topbar-center" id="topbarStats">
+      <!-- إحصائيات سريعة -->
+    </div>
+    <div class="topbar-left">
+      <a href="../dashboard/index.html" class="btn-sm btn-outline">📊 الداشبورد</a>
+      <button class="btn-sm btn-outline" onclick="logout()">خروج ⬅</button>
+    </div>
+  </header>
+
+  <!-- FILTERS BAR -->
+  <div class="filters-bar" id="filtersBar">
+    <div class="filters-row">
+      <!-- بحث -->
+      <div class="filter-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="بحث (اسم / رقم قومي / رقم الشكوى)..."
+               oninput="debounceSearch()">
+      </div>
+
+      <!-- فلاتر -->
+      <select id="fStatus"   onchange="applyFilters()" class="filter-select">
+        <option value="">كل الحالات</option>
+        <option>جديدة</option>
+        <option>تحت المراجعة</option>
+        <option>تم الحل</option>
+        <option>مغلقة</option>
+      </select>
+
+      <select id="fCategory" onchange="applyFilters()" class="filter-select">
+        <option value="">كل الفئات</option>
+        <option>وحدة صحية</option>
+        <option>مستشفى رعاية</option>
+        <option>مستشفى متعاقد</option>
+        <option>معمل متعاقد</option>
+      </select>
+
+      <select id="fSeverity" onchange="applyFilters()" class="filter-select">
+        <option value="">كل الخطورة</option>
+        <option>عالٍ</option>
+        <option>متوسط</option>
+        <option>منخفض</option>
+      </select>
+
+      <input type="date" id="fDateFrom" onchange="applyFilters()" class="filter-select" placeholder="من">
+      <input type="date" id="fDateTo"   onchange="applyFilters()" class="filter-select" placeholder="إلى">
+
+      <button class="btn-sm btn-outline" onclick="resetFilters()">↺ مسح</button>
+      <button class="btn-sm btn-primary" onclick="exportCsv()">⬇ تصدير CSV</button>
+    </div>
+
+    <!-- Status Pills -->
+    <div class="status-pills">
+      <button class="pill active" data-status="" onclick="quickFilter(this,'')">الكل</button>
+      <button class="pill pill-new"     data-status="جديدة"         onclick="quickFilter(this,'جديدة')">🔴 جديدة</button>
+      <button class="pill pill-review"  data-status="تحت المراجعة" onclick="quickFilter(this,'تحت المراجعة')">🟡 مراجعة</button>
+      <button class="pill pill-resolve" data-status="تم الحل"      onclick="quickFilter(this,'تم الحل')">🟢 محلولة</button>
+      <button class="pill pill-closed"  data-status="مغلقة"        onclick="quickFilter(this,'مغلقة')">⚫ مغلقة</button>
+      <button class="pill pill-breach"  data-status="__breach"     onclick="quickFilter(this,'__breach')">⚠️ متأخرة SLA</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-container">
+    <div class="table-meta" id="tableMeta">جارٍ التحميل...</div>
+    <div class="table-wrap">
+      <table class="admin-table" id="adminTable">
+        <thead>
+          <tr>
+            <th style="width:40px"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
+            <th>رقم الشكوى</th>
+            <th>الاسم</th>
+            <th>الهاتف</th>
+            <th>الفئة</th>
+            <th>المنفذ</th>
+            <th>الحالة</th>
+            <th>SLA</th>
+            <th>الخطورة</th>
+            <th>التاريخ</th>
+            <th>الإجراء</th>
+          </tr>
+        </thead>
+        <tbody id="adminTableBody">
+          <tr><td colspan="11" class="table-empty">جارٍ التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+</div>
+
+<!-- ═══ UPDATE MODAL ═══ -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-box" id="modalBox">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modalTitle">تحديث الشكوى</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <!-- Complaint Details -->
+      <div class="detail-grid" id="complaintDetails"></div>
+
+      <hr class="divider">
+
+      <!-- Update Form -->
+      <div class="update-form">
+        <div class="form-field">
+          <label>تغيير الحالة <span class="req">*</span></label>
+          <select id="modalStatus" class="form-select">
+            <option value="">-- اختر --</option>
+            <option>جديدة</option>
+            <option>تحت المراجعة</option>
+            <option>تم الحل</option>
+            <option>مغلقة</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>المسؤول عن المعالجة</label>
+          <input type="text" id="modalAssigned" class="form-input" placeholder="اسم الموظف">
+        </div>
+        <div class="form-field">
+          <label>ملاحظة الحل <span class="req-if">*إن تم الحل</span></label>
+          <textarea id="modalNote" class="form-textarea" rows="3"
+                    placeholder="اكتب ما تم اتخاذه من إجراءات..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
+      <button class="btn-save"   id="saveBtn" onclick="saveUpdate()">💾 حفظ التحديث</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING + TOAST -->
+<div class="full-loading" id="fullLoading" style="display:none">
+  <div class="spin-circle"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="../config.js" onerror="console.warn('config.js not found')"></script>
+<script src="admin.js"></script>
+</body>
+</html>
