@@ -7,7 +7,7 @@ var API_URL = window.SCRIPT_URL || '';
 
 // كائنات الرسوم البيانية لتحديثها لاحقاً
 var charts = {
-  fac: null, cat: null, trend: null, nps: null, radar: null
+  fac: null, cat: null, trend: null, nps: null, radar: null, surveyFac: null, surveyTrend: null
 };
 
 window.addEventListener('load', function() {
@@ -156,5 +156,30 @@ function renderCharts(cData) {
       datasets: [{ label: 'متوسط التقييم (من 10)', data: radarData, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: '#3b82f6', pointBackgroundColor: '#fff' }]
     },
     options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 10, ticks: { stepSize: 2, display: false } } } }
+  });
+  // 6. Survey Facilities
+  var sFacLabels = (cData.surveyFacilities || []).map(f => f.label);
+  var sFacVals = (cData.surveyFacilities || []).map(f => f.avgNps);
+  if(charts.surveyFac) charts.surveyFac.destroy();
+  charts.surveyFac = new Chart(document.getElementById('surveyFacChart'), {
+    type: 'bar',
+    data: {
+      labels: sFacLabels,
+      datasets: [{ label: 'متوسط مؤشر الولاء', data: sFacVals, backgroundColor: 'rgba(139, 92, 246, 0.7)', borderRadius: 5 }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
+  });
+
+  // 7. Survey Trend
+  var sTrLabels = Object.keys(cData.surveyTrend || {}).sort();
+  var sTrVals = sTrLabels.map(l => cData.surveyTrend[l]);
+  if(charts.surveyTrend) charts.surveyTrend.destroy();
+  charts.surveyTrend = new Chart(document.getElementById('surveyTrendChart'), {
+    type: 'line',
+    data: {
+      labels: sTrLabels,
+      datasets: [{ label: 'متوسط الرضا اليومي', data: sTrVals, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
   });
 }
