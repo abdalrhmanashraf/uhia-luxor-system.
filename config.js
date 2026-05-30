@@ -3,7 +3,7 @@
 // ==========================================
 
 // الرابط الجديد بعد التحديث
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrc-PfVQKdVc1S4HoUS9Kj1hSt2iBKRaxxA6VKCRBAILKahq3cgXENy8uVOJUAbxJl5g/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz11Rpl6DCNeuyJ1KTOIGQT3c3eZbx2TAQmW2fuDACB8tTp1jyDlx2SDrTHqyz9EgZHWg/exec';
 
 // اسم الفرع (مستخدم في الواجهات)
 var BRANCH_NAME = 'فرع الأقصر';
