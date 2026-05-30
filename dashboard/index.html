@@ -174,6 +174,120 @@
       </div>
     </div>
 
+  <!-- ═══ SECTION: COMPLAINTS ═══ -->
+  <section id="complaints" class="section">
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">📋 جميع الشكاوى الحديثة (قراءة فقط)</h3>
+        <a href="../admin/index.html" class="btn-admin" style="font-size: 0.85rem; padding: 6px 12px;">انتقل للوحة الإدارة للتحكم</a>
+      </div>
+      <div class="table-wrap" style="max-height: 70vh; overflow-y: auto;">
+        <table class="data-table" id="allComplaintsTable">
+          <thead>
+            <tr>
+              <th>رقم الشكوى</th>
+              <th>الاسم</th>
+              <th>الفئة</th>
+              <th>المنفذ</th>
+              <th>الحالة</th>
+              <th>SLA</th>
+              <th>الخطورة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody id="allComplaintsTableBody">
+            <tr><td colspan="8" class="table-empty">جارٍ التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SECTION: SURVEYS (POWERFUL DASHBOARD) ═══ -->
+  <section id="surveys" class="section">
+    <!-- Survey KPI Cards -->
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+      <div class="kpi-card info">
+        <div class="kpi-icon">📝</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="sv-total">--</div>
+          <div class="kpi-label">إجمالي الاستبيانات</div>
+        </div>
+      </div>
+      <div class="kpi-card success">
+        <div class="kpi-icon">🤩</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="sv-promoters">--%</div>
+          <div class="kpi-label">نسبة السعداء (Promoters)</div>
+        </div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-icon">😡</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="sv-detractors">--%</div>
+          <div class="kpi-label">نسبة المستائين (Detractors)</div>
+        </div>
+      </div>
+      <div class="kpi-card primary">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="sv-nps">--</div>
+          <div class="kpi-label">مؤشر NPS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Survey Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>🕸️ الرضا حسب قسم الخدمة (متوسط من 5)</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="surveyRadarChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <h3>📊 أفضل 5 منشآت طبية (تقييماً)</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="topProvidersChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <h3>📉 اتجاه معدل الرضا اليومي</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="surveyTrendChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>🔻 أسوأ 5 منشآت طبية (تقييماً)</h3>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="bottomProvidersChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SECTION: SLA ═══ -->
+  <section id="sla" class="section">
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">🕐 تفاصيل الالتزام بالوقت (SLA)</h3>
+      </div>
+      <div style="padding: 20px; color: #94a3b8; text-align: center;">
+        <p>هذه الشاشة محجوزة لتحليلات SLA التفصيلية مستقبلاً.</p>
+        <p>يرجى متابعة حالة SLA اللحظية من (نظرة عامة).</p>
+      </div>
+    </div>
   </section>
 
   <!-- ═══ SECTION: ANALYTICS ═══ -->
