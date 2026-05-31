@@ -20,16 +20,130 @@ function switchSurveyTab(tabId) {
 }
 
 window.addEventListener('load', function() {
-  updateClock();
-  setInterval(updateClock, 1000);
-  
+  var savedUser = localStorage.getItem('uhia_user');
+  if (savedUser) {
+    var user = JSON.parse(savedUser);
+    if (user.role === 'admin') {
+      showDashboard();
+    } else {
+      document.getElementById('loginScreen').style.display = 'block';
+    }
+  } else {
+    document.getElementById('loginScreen').style.display = 'block';
+  }
+
   // إعداد الإعدادات الافتراضية لـ Chart.js للـ Dark Mode
   Chart.defaults.color = '#94a3b8';
   Chart.defaults.font.family = "'Cairo', sans-serif";
   Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
-  
-  loadData();
 });
+
+function showDashboard() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashWrap').style.display = 'flex';
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadData();
+}
+
+function doLogin() {
+  var phone = document.getElementById('phoneInput').value.trim();
+  var pwd = document.getElementById('pwdInput').value.trim();
+  var err = document.getElementById('loginError');
+  var btnText = document.getElementById('loginBtnText');
+
+  if (!phone || !pwd) return err.innerText = 'الرجاء إدخال رقم الهاتف وكلمة المرور';
+  if (!API_URL) return err.innerText = 'خطأ: لم يتم العثور على رابط API.';
+
+  err.innerText = '';
+  btnText.innerText = 'جارٍ التحقق...';
+  
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'login', phone: phone, password: pwd }),
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.success) {
+      if (res.user.role === 'admin') {
+        localStorage.setItem('uhia_user', JSON.stringify(res.user));
+        showDashboard();
+      } else {
+        err.innerText = 'عفواً، هذه اللوحة مخصصة لمدير الفرع فقط.';
+        btnText.innerText = 'تسجيل الدخول للوحة التحكم';
+      }
+    } else {
+      err.innerText = res.message || 'بيانات الدخول غير صحيحة';
+      btnText.innerText = 'تسجيل الدخول للوحة التحكم';
+    }
+  }).catch(error => {
+    err.innerText = 'حدث خطأ في الاتصال بالخادم.';
+    btnText.innerText = 'تسجيل الدخول للوحة التحكم';
+  });
+}
+
+function logout() {
+  localStorage.removeItem('uhia_user');
+  document.getElementById('dashWrap').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'block';
+  document.getElementById('pwdInput').value = '';
+}
+
+function openProfileModal() {
+  document.getElementById('profileModal').style.display = 'block';
+  document.getElementById('profOldPwd').value = '';
+  document.getElementById('profNewPwd').value = '';
+  document.getElementById('profNewPhone').value = '';
+  document.getElementById('profError').innerText = '';
+}
+
+function closeProfileModal() {
+  document.getElementById('profileModal').style.display = 'none';
+}
+
+function saveProfile() {
+  var oldPwd = document.getElementById('profOldPwd').value.trim();
+  var newPwd = document.getElementById('profNewPwd').value.trim();
+  var newPhone = document.getElementById('profNewPhone').value.trim();
+  var err = document.getElementById('profError');
+  var btn = document.getElementById('profSaveBtn');
+
+  if (!oldPwd) return err.innerText = 'كلمة المرور الحالية مطلوبة للتأكيد!';
+  if (!newPwd && !newPhone) return err.innerText = 'يجب إدخال إما هاتف جديد أو كلمة مرور جديدة للتعديل!';
+
+  var savedUser = JSON.parse(localStorage.getItem('uhia_user') || '{}');
+  var currentPhone = savedUser.phone;
+
+  err.innerText = '';
+  btn.innerText = 'جارٍ الحفظ...';
+
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'updateProfile',
+      currentPhone: currentPhone,
+      oldPassword: oldPwd,
+      newPhone: newPhone,
+      newPassword: newPwd
+    }),
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+  })
+  .then(res => res.json())
+  .then(res => {
+    btn.innerText = 'حفظ التعديلات';
+    if (res.success) {
+      alert('تم تحديث بياناتك بنجاح! سيتم تسجيل خروجك لتسجيل الدخول بالبيانات الجديدة.');
+      closeProfileModal();
+      logout();
+    } else {
+      err.innerText = res.message || 'فشل التحديث، تأكد من كلمة المرور الحالية.';
+    }
+  }).catch(error => {
+    err.innerText = 'خطأ في الاتصال بالسيرفر.';
+    btn.innerText = 'حفظ التعديلات';
+  });
+}
 
 function updateClock() {
   var now = new Date();

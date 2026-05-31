@@ -21,7 +21,30 @@
 </head>
 <body>
 
-<div class="dash-wrap">
+<!-- Login Screen for Dashboard -->
+<div class="login-screen" id="loginScreen">
+  <div class="glass-card login-card" style="max-width: 400px; margin: 100px auto; text-align: center; padding: 30px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;">
+    <img src="../uhia.png" alt="شعار هيئة التأمين الصحي الشامل" style="width: 120px; margin-bottom: 20px;">
+    <h1 style="font-size: 1.5rem; color: white; margin-bottom: 10px;">اللوحة التنفيذية - الدخول</h1>
+    <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px;">مخصصة لمدير الفرع والإدارة العليا فقط</p>
+    
+    <div style="text-align: right; margin-bottom: 15px;">
+      <label style="color: #cbd5e1; font-size: 0.85rem; display: block; margin-bottom: 5px;">رقم الهاتف</label>
+      <input type="text" id="phoneInput" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; outline: none;">
+    </div>
+    
+    <div style="text-align: right; margin-bottom: 20px;">
+      <label style="color: #cbd5e1; font-size: 0.85rem; display: block; margin-bottom: 5px;">كلمة المرور</label>
+      <input type="password" id="pwdInput" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; outline: none;" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    
+    <div id="loginError" style="color: #ef4444; font-size: 0.85rem; margin-bottom: 15px; text-align: center;"></div>
+    
+    <button onclick="doLogin()" id="loginBtnText" style="width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;">تسجيل الدخول للوحة التحكم</button>
+  </div>
+</div>
+
+<div class="dash-wrap" id="dashWrap" style="display:none">
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="../uhia.png" alt="UHIA Logo">
@@ -31,7 +54,7 @@
       <a href="#surveys" onclick="switchSection('surveys')">📋 تحليل الاستبيانات</a>
       <a href="#staff" onclick="switchSection('staff')">🧑‍💻 أداء الموظفين</a>
       <hr class="glass-divider">
-      <a href="../admin/index.html" class="nav-admin">⚙️ بوابة الموظفين (ادارة الشكاوى)</a>
+      <a href="../admin/index.html" class="nav-admin">⚙️ بوابة الموظفين (التذاكر)</a>
     </div>
     
     <div class="time-widget">
@@ -43,7 +66,11 @@
   <main class="main-content">
     <header class="topbar">
       <h1>اللوحة التنفيذية V3.2 (CRM Analytics)</h1>
-      <button class="btn-refresh" onclick="loadData()">تحديث البيانات 🔄</button>
+      <div>
+        <button class="btn-refresh" onclick="openProfileModal()" style="background: #3b82f6; margin-left: 10px;">إعدادات الحساب ⚙️</button>
+        <button class="btn-refresh" onclick="loadData()" style="margin-left: 10px;">تحديث البيانات 🔄</button>
+        <button class="btn-refresh" onclick="logout()" style="background: #ef4444;">تسجيل الخروج 🚪</button>
+      </div>
     </header>
 
     <div class="content-sections">
@@ -213,6 +240,33 @@
 
     </div>
   </main>
+</div>
+
+<!-- نافذة إعدادات الحساب (Profile Modal) -->
+<div class="login-screen" id="profileModal" style="display:none; z-index: 1000;">
+  <div class="glass-card login-card" style="max-width: 400px; margin: 50px auto; padding: 25px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; position: relative;">
+    <button onclick="closeProfileModal()" style="position: absolute; top: 10px; left: 10px; background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;">❌</button>
+    <h2 style="color: white; margin-bottom: 20px; text-align: center;">إعدادات الحساب ⚙️</h2>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="color: #cbd5e1; font-size: 0.85rem; display: block; margin-bottom: 5px;">رقم الهاتف الجديد</label>
+      <input type="text" id="profNewPhone" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white;" placeholder="اختياري (اتركه فارغاً لعدم التغيير)">
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="color: #cbd5e1; font-size: 0.85rem; display: block; margin-bottom: 5px;">كلمة المرور الحالية (مطلوبة للتأكيد)</label>
+      <input type="password" id="profOldPwd" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white;">
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="color: #cbd5e1; font-size: 0.85rem; display: block; margin-bottom: 5px;">كلمة المرور الجديدة</label>
+      <input type="password" id="profNewPwd" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white;" placeholder="اختياري (اتركه فارغاً لعدم التغيير)">
+    </div>
+
+    <div id="profError" style="color: #ef4444; font-size: 0.85rem; margin-bottom: 15px; text-align: center;"></div>
+    
+    <button onclick="saveProfile()" id="profSaveBtn" style="width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">حفظ التعديلات</button>
+  </div>
 </div>
 
 <div class="full-loading" id="fullLoading" style="display:none"><div class="spinner"></div></div>

@@ -27,7 +27,7 @@
     <div class="login-logo">
       <img src="../uhia.png" alt="شعار هيئة التأمين الصحي الشامل">
     </div>
-    <h1 class="login-title">بوابة الموظفين </h1>
+    <h1 class="login-title">بوابة الموظفين التعاونية</h1>
     <p class="login-sub">مرحباً بك في نظام إدارة مسار الشكاوى الذكي</p>
     
     <div class="form-field">
@@ -57,6 +57,7 @@
       <div class="user-info">
         <div class="user-name" id="displayUserName">الموظف</div>
         <div class="user-role" id="displayUserRole">Role</div>
+        <button onclick="openProfileModal()" style="background: none; border: 1px solid #3b82f6; color: #93c5fd; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-top: 5px; cursor: pointer; transition: 0.3s;">إعدادات الحساب ⚙️</button>
       </div>
     </div>
     <nav class="sidebar-nav">
@@ -150,6 +151,33 @@
       <button class="btn-secondary" onclick="closeModal()">إلغاء</button>
       <button class="btn-primary" id="saveBtn" onclick="saveUpdate()">💾 حفظ الإجراءات</button>
     </div>
+  </div>
+</div>
+
+<!-- نافذة إعدادات الحساب (Profile Modal) للموظفين -->
+<div class="login-screen" id="profileModal" style="display:none; z-index: 1000;">
+  <div class="glass-card login-card" style="max-width: 400px; margin: 50px auto; padding: 25px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; position: relative;">
+    <button onclick="closeProfileModal()" style="position: absolute; top: 10px; left: 10px; background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;">❌</button>
+    <h2 style="color: white; margin-bottom: 20px; text-align: center;">إعدادات الحساب ⚙️</h2>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="color: #cbd5e1; font-size: 0.85rem; display: block; margin-bottom: 5px;">رقم الهاتف الجديد</label>
+      <input type="text" id="profNewPhone" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white;" placeholder="اختياري (اتركه فارغاً لعدم التغيير)">
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="color: #cbd5e1; font-size: 0.85rem; display: block; margin-bottom: 5px;">كلمة المرور الحالية (مطلوبة للتأكيد)</label>
+      <input type="password" id="profOldPwd" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white;">
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="color: #cbd5e1; font-size: 0.85rem; display: block; margin-bottom: 5px;">كلمة المرور الجديدة</label>
+      <input type="password" id="profNewPwd" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white;" placeholder="اختياري (اتركه فارغاً لعدم التغيير)">
+    </div>
+
+    <div id="profError" style="color: #ef4444; font-size: 0.85rem; margin-bottom: 15px; text-align: center;"></div>
+    
+    <button onclick="saveProfile()" id="profSaveBtn" style="width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">حفظ التعديلات</button>
   </div>
 </div>
 
