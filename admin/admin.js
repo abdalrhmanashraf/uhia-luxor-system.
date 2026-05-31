@@ -157,7 +157,9 @@ function openModal(id) {
     <p>المريض: <strong>${c.name} (${c.phone})</strong></p>
     <p>الجهة المشكو في حقها: <strong>${c.facility}</strong></p>
     <div style="background: rgba(255,255,255,0.05); padding: 10px; margin-top: 10px; border-radius: 5px;">
-      <p style="color:var(--text-main); margin-bottom:0;"><strong>نص الشكوى الأصلية:</strong><br>${c.complaintText || 'لم يُكتب نص'}</p>
+      <p style="color:var(--text-main); margin-bottom:10px;"><strong>نص الشكوى الأصلية:</strong><br>${c.complaintText || 'لم يُكتب نص'}</p>
+      ${c.audio && String(c.audio).startsWith('http') ? `<div style="margin-top:10px;"><strong>تسجيل صوتي:</strong><br><audio controls style="width:100%; height:35px; margin-top:5px;"><source src="${c.audio}"></audio><br><a href="${c.audio}" target="_blank" style="font-size:0.8rem; color:#3b82f6;">تحميل/فتح الصوت 🎵</a></div>` : ''}
+      ${c.attachments && String(c.attachments).startsWith('http') ? `<div style="margin-top:10px;"><strong>المرفقات (صور):</strong><br>` + c.attachments.split('\\n').map((url, i) => `<a href="${url}" target="_blank" style="display:inline-block; margin:5px 5px 0 0; background:#3b82f6; color:white; padding:3px 8px; border-radius:4px; font-size:0.8rem; text-decoration:none;">صورة ${i+1} 🖼️</a>`).join('') + `</div>` : ''}
     </div>
   `;
   document.getElementById('complaintDetails').innerHTML = detailsHtml;
