@@ -261,7 +261,19 @@ function startRecording() {
     APP.audioBase64 = null;
     APP.recSeconds  = 0;
     var chunks = [];
-    APP.mediaRecorder = new MediaRecorder(stream);
+    
+    // تقليل الجودة لتسريع الإرسال (16kbps)
+    var options = {};
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+      options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 16000 };
+    }
+    
+    try {
+      APP.mediaRecorder = new MediaRecorder(stream, options);
+    } catch(e) {
+      APP.mediaRecorder = new MediaRecorder(stream);
+    }
+    
     APP.mediaRecorder.ondataavailable = function(e) {
       if(e.data.size > 0) chunks.push(e.data);
     };

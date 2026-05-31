@@ -171,6 +171,7 @@ function loadData() {
         renderRepeated(res.analytics.repeatedPatients);
         renderTopStaff(res.analytics.topEmployees);
         renderCharts(res.analytics.charts);
+        renderRecentSurveys(res.analytics.charts.recentSurveys);
       } else alert('خطأ في جلب البيانات: ' + res.error);
     }).catch(err => {
       document.getElementById('fullLoading').style.display = 'none';
@@ -210,6 +211,29 @@ function renderTopStaff(staff) {
   staff.forEach((s, i) => {
     var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : ''));
     html += `<tr><td>${medal} <strong>${s.name}</strong></td><td>${s.resolvedCount}</td><td>${s.avgSpeedHours}</td></tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function renderRecentSurveys(surveys) {
+  var tbody = document.getElementById('recentSurveysBody');
+  if (!surveys || surveys.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">لا توجد استبيانات حديثة</td></tr>';
+    return;
+  }
+  var html = '';
+  surveys.forEach(s => {
+    var color = s.avg >= 4 ? '#10b981' : (s.avg >= 2.5 ? '#f59e0b' : '#ef4444');
+    html += `
+      <tr>
+        <td>${s.date}</td>
+        <td><strong>${s.name}</strong></td>
+        <td>${s.nid}</td>
+        <td dir="ltr" style="text-align:right;">${s.phone}</td>
+        <td><span style="font-size:0.85rem; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">${s.fac} (${s.cat})</span></td>
+        <td><strong style="color:${color}; font-size:1.1rem;">${s.avg} / 5</strong></td>
+      </tr>
+    `;
   });
   tbody.innerHTML = html;
 }
