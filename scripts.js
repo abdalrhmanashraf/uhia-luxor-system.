@@ -209,7 +209,8 @@ function collectSurveyAnswers() {
     'Q_UNIT_01','Q_UNIT_02','Q_UNIT_03','Q_UNIT_04',
     'Q_CARE_01','Q_CARE_02','Q_CARE_03','Q_CARE_04','Q_CARE_05',
     'Q_CONT_01','Q_CONT_02','Q_CONT_03','Q_CONT_04',
-    'Q_LAB_01','Q_LAB_02','Q_LAB_03','Q_LAB_04'
+    'Q_LAB_01','Q_LAB_02','Q_LAB_03','Q_LAB_04',
+    'Q_BOOKING_TIME', 'Q_OUTLET_EMP', 'Q_OUTLET_RATE'
   ];
   var answers = {};
   ALL_QUESTIONS.forEach(function(qCode) {
