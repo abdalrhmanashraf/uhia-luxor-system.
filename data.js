@@ -70,16 +70,21 @@ var STATIC_DATA = {
       {name:'مستشفى العديسات التخصصي',code:'CARE003',location:'أرمنت - شرق'},
       {name:'مستشفى الكرنك الدولي',code:'CARE004',location:'الأقصر'},
       {name:'مستشفى الأقصر الدولي',code:'CARE005',location:'الأقصر'},
-      {name:'مستشفى إيزيس التخصصي',code:'CARE006',location:'الأقصر'},
-      {name:'مستشفى شفاء الأورمان',code:'CARE007',location:'الأقصر'}
+      {name:'مستشفى إيزيس التخصصي',code:'CARE006',location:'الأقصر'}
     ],
     'مستشفى متعاقد': [
       {name:'مستشفى كليوباترا - الأقصر',code:'CONT001',location:'الأقصر'},
-      {name:'مستشفى الندى - الأقصر',code:'CONT002',location:'الأقصر'}
+      {name:'مستشفى الندى - الأقصر',code:'CONT002',location:'الأقصر'},
+      {name:'مستشفى شفاء الأورمان',code:'CONT003',location:'الأقصر'},
+      {name:'مستشفى الكمال',code:'CONT004',location:'الأقصر'},
+      {name:'مستشفى رؤية',code:'CONT005',location:'الأقصر'},
+      {name:'مستشفى العيون الدولي',code:'CONT006',location:'الأقصر'}
     ],
     'معمل متعاقد': [
       {name:'معمل البرج - فرع الأقصر',code:'LAB001',location:'الأقصر'},
-      {name:'معمل المختبر - فرع الأقصر',code:'LAB002',location:'الأقصر'}
+      {name:'معمل المختبر - فرع الأقصر',code:'LAB002',location:'الأقصر'},
+      {name:'معمل رويال لاب',code:'LAB003',location:'الأقصر'},
+      {name:'معمل الاسراء',code:'LAB004',location:'الأقصر'}
     ]
   },
   questions: {
@@ -94,23 +99,32 @@ var STATIC_DATA = {
       {code:'EMP_NAME',type:'text',text:'اسم الموظف / جامع الاستبيان (اختياري لتسجيل الأداء)',required:false,options:[]}
     ],
     'وحدة صحية': [
-      {code:'Q_UNIT_01',type:'rating',text:'كيف تقيم سرعة الاستجابة وتقديم الخدمة؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
+      {code:'Q_UNIT_01',type:'yesno',text:'هل تم توقيع الكشف الطبي؟',required:true,options:['نعم','لا']},
       {code:'Q_UNIT_02',type:'yesno',text:'هل تم توجيهك بشكل صحيح عند الوصول للوحدة؟',required:true,options:['نعم','لا']},
       {code:'Q_UNIT_03',type:'rating',text:'كيف تقيم توافر الأدوية والتجهيزات؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
-      {code:'Q_UNIT_04',type:'yesno',text:'هل تم إعلامك بحقوقك كمنتفع من التأمين الصحي الشامل؟',required:true,options:['نعم','لا']}
+      {code:'Q_UNIT_04',type:'yesno',text:'هل تم إعلامك بحقوقك كمنتفع من التأمين الصحي الشامل؟',required:true,options:['نعم','لا']},
+      {code:'Q_BOOKING_TIME',type:'multiple',text:'كم استغرق حجز موعدك مع طبيب الأسرة؟',required:false,options:['24 ساعة أو أقل','48 ساعة','72 ساعة','96 ساعة فأكثر']},
+      {code:'Q_OUTLET_EMP',type:'yesno',text:'هل سبق لك التعامل مع موظف المنفذ الخاص بالتأمين الشامل في طلب أو شكوى؟',required:false,options:['نعم','لا']},
+      {code:'Q_OUTLET_RATE',type:'rating',text:'ما تقييمك لتعامل موظف المنفذ؟',required:false,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً'],dependOn:'Q_OUTLET_EMP',dependVal:'نعم'}
     ],
     'مستشفى رعاية': [
-      {code:'Q_CARE_01',type:'rating',text:'كيف تقيم وقت الانتظار قبل تلقي الخدمة؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
+      {code:'Q_CARE_01',type:'yesno',text:'هل تم توقيع الكشف الطبي؟',required:true,options:['نعم','لا']},
       {code:'Q_CARE_02',type:'rating',text:'كيف تقيم جودة الرعاية الطبية المقدمة؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
       {code:'Q_CARE_03',type:'yesno',text:'هل وجدت التخصص المطلوب متاحاً؟',required:true,options:['نعم','لا']},
       {code:'Q_CARE_04',type:'rating',text:'كيف تقيم توافر الأجهزة والتجهيزات الطبية؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
-      {code:'Q_CARE_05',type:'yesno',text:'هل تم شرح خطة العلاج بوضوح؟',required:true,options:['نعم','لا']}
+      {code:'Q_CARE_05',type:'yesno',text:'هل تم شرح خطة العلاج بوضوح؟',required:true,options:['نعم','لا']},
+      {code:'Q_BOOKING_TIME',type:'multiple',text:'كم استغرق حجز موعدك مع الطبيب المختص؟',required:false,options:['24 ساعة أو أقل','48 ساعة','72 ساعة','96 ساعة فأكثر']},
+      {code:'Q_OUTLET_EMP',type:'yesno',text:'هل سبق لك التعامل مع موظف المنفذ الخاص بالتأمين الشامل في طلب أو شكوى؟',required:false,options:['نعم','لا']},
+      {code:'Q_OUTLET_RATE',type:'rating',text:'ما تقييمك لتعامل موظف المنفذ؟',required:false,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً'],dependOn:'Q_OUTLET_EMP',dependVal:'نعم'}
     ],
     'مستشفى متعاقد': [
       {code:'Q_CONT_01',type:'rating',text:'كيف تقيم سهولة الوصول والتسجيل في المستشفى؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
       {code:'Q_CONT_02',type:'rating',text:'كيف تقيم جودة الخدمة مقارنة بالمستشفيات الحكومية؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
       {code:'Q_CONT_03',type:'yesno',text:'هل تم قبولك بدون أي تعقيدات إضافية؟',required:true,options:['نعم','لا']},
-      {code:'Q_CONT_04',type:'yesno',text:'هل أُعلمت بحقك في الاختيار بين المستشفيات؟',required:true,options:['نعم','لا']}
+      {code:'Q_CONT_04',type:'yesno',text:'هل أُعلمت بحقك في الاختيار بين المستشفيات؟',required:true,options:['نعم','لا']},
+      {code:'Q_BOOKING_TIME',type:'multiple',text:'كم استغرق حجز موعدك مع الطبيب المختص؟',required:false,options:['24 ساعة أو أقل','48 ساعة','72 ساعة','96 ساعة فأكثر']},
+      {code:'Q_OUTLET_EMP',type:'yesno',text:'هل سبق لك التعامل مع موظف المنفذ الخاص بالتأمين الشامل في طلب أو شكوى؟',required:false,options:['نعم','لا']},
+      {code:'Q_OUTLET_RATE',type:'rating',text:'ما تقييمك لتعامل موظف المنفذ؟',required:false,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً'],dependOn:'Q_OUTLET_EMP',dependVal:'نعم'}
     ],
     'معمل متعاقد': [
       {code:'Q_LAB_01',type:'rating',text:'كيف تقيم سرعة إنجاز نتائج التحاليل؟',required:true,options:['ضعيف جداً','ضعيف','مقبول','جيد','جيد جداً']},
